@@ -53,32 +53,38 @@ const Dashboard = () => {
     }
   };
 
-  // Initial data fetch
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Auto-refresh every 5 minutes
   useEffect(() => {
     const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, []);
 
-  // D3 chart creation/update
   useEffect(() => {
-    if (dashboardData?.departmentRevenue && d3Container.current) {
-      createD3Chart(dashboardData.departmentRevenue);
-    }
+    const renderChart = () => {
+      if (dashboardData?.departmentRevenue && d3Container.current) {
+        setTimeout(() => {
+          createD3Chart(dashboardData.departmentRevenue);
+        }, 100);
+      }
+    };
+
+    renderChart();
+    window.addEventListener('resize', renderChart);
+    return () => window.removeEventListener('resize', renderChart);
   }, [dashboardData]);
 
   const createD3Chart = (departmentData) => {
-    if (!departmentData || !departmentData.length) return;
-
-    const margin = { top: 20, right: 30, bottom: 60, left: 80 };
-    const width = 400 - margin.left - margin.right;
-    const height = 300 - margin.top - margin.bottom;
+    if (!departmentData || !departmentData.length || !d3Container.current) return;
 
     d3.select(d3Container.current).selectAll("*").remove();
+
+    const containerWidth = d3Container.current.clientWidth;
+    const margin = { top: 30, right: 30, bottom: 60, left: 80 };
+    const width = Math.max(containerWidth - margin.left - margin.right, 300);
+    const height = 300 - margin.top - margin.bottom;
 
     const svg = d3.select(d3Container.current)
       .append('svg')
@@ -87,62 +93,105 @@ const Dashboard = () => {
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    const validData = departmentData.filter(d => d.revenue > 0);
+    const validData = departmentData
+      .filter(d => Number(d.revenue) > 0)
+      .sort((a, b) => Number(b.revenue) - Number(a.revenue));
 
     const x = d3.scaleBand()
       .range([0, width])
-      .padding(0.1);
+      .padding(0.2);
 
     const y = d3.scaleLinear()
       .range([height, 0]);
 
     x.domain(validData.map(d => d.department));
-    y.domain([0, d3.max(validData, d => Number(d.revenue))]);
+    y.domain([0, d3.max(validData, d => Number(d.revenue) * 1.1)]);
+
+    // Add gradient definition
+    const gradient = svg.append("defs")
+      .append("linearGradient")
+      .attr("id", "bar-gradient")
+      .attr("x1", "0%")
+      .attr("y1", "0%")
+      .attr("x2", "0%")
+      .attr("y2", "100%");
+
+    gradient.append("stop")
+      .attr("offset", "0%")
+      .attr("stop-color", "#3182CE");
+
+    gradient.append("stop")
+      .attr("offset", "100%")
+      .attr("stop-color", "#4299E1");
 
     // Add bars
-    svg.selectAll('.bar')
+    const bars = svg.selectAll('.bar')
       .data(validData)
       .enter()
       .append('rect')
       .attr('class', 'bar')
       .attr('x', d => x(d.department))
       .attr('width', x.bandwidth())
+      .attr('y', height)
+      .attr('height', 0)
+      .attr('fill', 'url(#bar-gradient)');
+
+    // Add animation
+    bars.transition()
+      .duration(800)
+      .delay((d, i) => i * 100)
       .attr('y', d => y(Number(d.revenue)))
-      .attr('height', d => height - y(Number(d.revenue)))
-      .attr('fill', '#4299E1')  // Tailwind blue-500
-      .on('mouseover', function(event, d) {
-        d3.select(this).attr('fill', '#2B6CB0');  // Tailwind blue-700
-        svg.append('text')
-          .attr('class', 'value-label')
-          .attr('x', x(d.department) + x.bandwidth() / 2)
-          .attr('y', y(Number(d.revenue)) - 5)
-          .attr('text-anchor', 'middle')
-          .text(`$${(Number(d.revenue)).toLocaleString()}`);
-      })
-      .on('mouseout', function() {
-        d3.select(this).attr('fill', '#4299E1');
-        svg.selectAll('.value-label').remove();
-      });
+      .attr('height', d => height - y(Number(d.revenue)));
+
+    // Add hover effects
+    bars.on('mouseover', function(event, d) {
+      d3.select(this)
+        .transition()
+        .duration(200)
+        .attr('fill', '#2C5282');
+
+      svg.append('text')
+        .attr('class', 'value-label')
+        .attr('x', x(d.department) + x.bandwidth() / 2)
+        .attr('y', y(Number(d.revenue)) - 8)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#2D3748')
+        .text(`$${Number(d.revenue).toLocaleString()}`);
+    })
+    .on('mouseout', function() {
+      d3.select(this)
+        .transition()
+        .duration(200)
+        .attr('fill', 'url(#bar-gradient)');
+      
+      svg.selectAll('.value-label').remove();
+    });
 
     // Add axes
     svg.append('g')
       .attr('transform', `translate(0,${height})`)
       .call(d3.axisBottom(x))
       .selectAll("text")
-      .attr("transform", "rotate(-45)")
-      .style("text-anchor", "end");
+      .attr('transform', 'rotate(-45)')
+      .style('text-anchor', 'end')
+      .attr('dx', '-0.8em')
+      .attr('dy', '0.15em')
+      .style('font-size', '12px');
 
     svg.append('g')
       .call(d3.axisLeft(y)
-        .tickFormat(d => `$${d/1000}K`));
+        .tickFormat(d => `$${d/1000}K`)
+        .ticks(5))
+      .style('font-size', '12px');
 
-    // Add Y axis label
+    // Add Y-axis label
     svg.append('text')
       .attr('transform', 'rotate(-90)')
       .attr('y', 0 - margin.left)
       .attr('x', 0 - (height / 2))
       .attr('dy', '1em')
       .style('text-anchor', 'middle')
+      .style('font-size', '12px')
       .text('Revenue ($)');
   };
 
@@ -162,14 +211,16 @@ const Dashboard = () => {
       {
         label: 'Revenue',
         data: dashboardData?.monthlyMetrics.map(item => Number(item.revenue)).reverse() || [],
-        borderColor: '#4299E1',  // Tailwind blue-500
-        tension: 0.1
+        borderColor: '#4299E1',
+        tension: 0.1,
+        fill: false
       },
       {
         label: 'Expenses',
         data: dashboardData?.monthlyMetrics.map(item => Number(item.expenses)).reverse() || [],
-        borderColor: '#F56565',  // Tailwind red-500
-        tension: 0.1
+        borderColor: '#F56565',
+        tension: 0.1,
+        fill: false
       }
     ]
   };
@@ -179,11 +230,11 @@ const Dashboard = () => {
     datasets: [{
       data: dashboardData?.categoryExpenses?.map(item => Number(item.total)) || [],
       backgroundColor: [
-        '#F56565',  // red-500
-        '#4299E1',  // blue-500
-        '#F6AD55',  // orange-400
-        '#48BB78',  // green-500
-        '#9F7AEA',  // purple-500
+        '#F56565',
+        '#4299E1',
+        '#F6AD55',
+        '#48BB78',
+        '#9F7AEA'
       ]
     }]
   };
@@ -254,7 +305,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg mb-2">Revenue by Department</h3>
-            <div ref={d3Container}></div>
+            <div ref={d3Container} className="min-h-[300px]" />
           </div>
           
           <div className="bg-white p-4 rounded-lg shadow">
@@ -263,11 +314,19 @@ const Dashboard = () => {
               data={monthlyData}
               options={{
                 responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                   y: {
                     beginAtZero: true,
                     ticks: {
                       callback: value => `$${value/1000}K`
+                    }
+                  }
+                },
+                plugins: {
+                  tooltip: {
+                    callbacks: {
+                      label: (context) => `$${context.raw.toLocaleString()}`
                     }
                   }
                 }
@@ -281,6 +340,7 @@ const Dashboard = () => {
               data={expenseData}
               options={{
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                   tooltip: {
                     callbacks: {
