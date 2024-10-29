@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Line, Pie } from 'react-chartjs-2';
 import * as d3 from 'd3';
-import { UserCircle } from 'lucide-react';
+import { UserCircle, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 
-// Register ChartJS components
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,7 +12,7 @@ import {
   ArcElement,
   Title,
   Tooltip,
-  Legend,
+  Legend
 } from 'chart.js';
 
 ChartJS.register(
@@ -33,66 +32,42 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const d3Container = useRef(null);
 
+  const fetchData = async () => {
+    try {
+      const credentials = localStorage.getItem('credentials');
+      const headers = {
+        'Authorization': `Basic ${credentials}`
+      };
+
+      // Fetch dashboard data
+      const dashboardResponse = await fetch('/api/dashboard-data', { headers });
+      const dashboardResult = await dashboardResponse.json();
+      setDashboardData(dashboardResult);
+
+      // Fetch transactions
+      const transactionsResponse = await fetch('/api/transactions', { headers });
+      const transactionsResult = await transactionsResponse.json();
+      setTransactions(transactionsResult.transactions);
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setIsLoading(false);
+    }
+  };
+
+  // Initial data fetch
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const credentials = localStorage.getItem('credentials');
-        console.log('Credentials found:', !!credentials);
-
-        const headers = {
-          'Authorization': `Basic ${credentials}`,
-          'Accept': 'application/json'
-        };
-        console.log('Request headers:', headers);
-
-        // Fetch dashboard data
-        const dashboardResponse = await fetch('/api/dashboard-data', { headers });
-        console.log('Dashboard response status:', dashboardResponse.status);
-        
-        // Log the raw response with clear markers
-        const rawResponse = await dashboardResponse.text();
-        console.log('=================== START OF RAW RESPONSE ===================');
-        console.log(rawResponse);
-        console.log('=================== END OF RAW RESPONSE ===================');
-
-        // Only try to parse if it's not HTML
-        if (!rawResponse.includes('<!DOCTYPE')) {
-          const dashboardResult = JSON.parse(rawResponse);
-          setDashboardData(dashboardResult);
-        } else {
-          console.error('Received HTML instead of JSON response');
-          console.log('Full HTML response:', rawResponse);
-        }
-
-        // Fetch transactions
-        const transactionsResponse = await fetch('/api/transactions', { headers });
-        console.log('Transactions response status:', transactionsResponse.status);
-        
-        const rawTransactions = await transactionsResponse.text();
-        console.log('Raw Transactions Response:', rawTransactions);
-
-        if (!rawTransactions.includes('<!DOCTYPE')) {
-          const transactionsResult = JSON.parse(rawTransactions);
-          setTransactions(transactionsResult.transactions);
-        } else {
-          console.error('Received HTML instead of JSON response for transactions');
-          console.log('Full HTML transactions response:', rawTransactions);
-        }
-
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack,
-          type: error.constructor.name
-        });
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(fetchData, 300000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // D3 chart creation/update
   useEffect(() => {
     if (dashboardData?.departmentRevenue && d3Container.current) {
       createD3Chart(dashboardData.departmentRevenue);
@@ -100,7 +75,7 @@ const Dashboard = () => {
   }, [dashboardData]);
 
   const createD3Chart = (departmentData) => {
-    const margin = { top: 20, right: 30, bottom: 40, left: 60 };
+    const margin = { top: 20, right: 30, bottom: 60, left: 80 };
     const width = 400 - margin.left - margin.right;
     const height = 300 - margin.top - margin.bottom;
 
@@ -122,7 +97,7 @@ const Dashboard = () => {
       .range([height, 0]);
 
     x.domain(departmentData.map(d => d.department));
-    y.domain([0, d3.max(departmentData, d => d.revenue)]);
+    y.domain([0, d3.max(departmentData, d => +d.revenue)]);
 
     // Add bars
     svg.selectAll('.bar')
@@ -132,9 +107,24 @@ const Dashboard = () => {
       .attr('class', 'bar')
       .attr('x', d => x(d.department))
       .attr('width', x.bandwidth())
-      .attr('y', d => y(d.revenue))
-      .attr('height', d => height - y(d.revenue))
-      .attr('fill', 'steelblue');
+      .attr('y', d => y(+d.revenue))
+      .attr('height', d => height - y(+d.revenue))
+      .attr('fill', 'steelblue')
+      .on('mouseover', function(event, d) {
+        d3.select(this).attr('fill', '#2c5282');
+        
+        // Add tooltip
+        svg.append('text')
+          .attr('class', 'tooltip')
+          .attr('x', x(d.department) + x.bandwidth() / 2)
+          .attr('y', y(+d.revenue) - 5)
+          .attr('text-anchor', 'middle')
+          .text(`$${(+d.revenue).toLocaleString()}`);
+      })
+      .on('mouseout', function() {
+        d3.select(this).attr('fill', 'steelblue');
+        svg.selectAll('.tooltip').remove();
+      });
 
     // Add axes
     svg.append('g')
@@ -145,7 +135,16 @@ const Dashboard = () => {
       .style("text-anchor", "end");
 
     svg.append('g')
-      .call(d3.axisLeft(y));
+      .call(d3.axisLeft(y)
+        .tickFormat(d => `$${d/1000}K`));
+
+    // Add axis labels
+    svg.append('text')
+      .attr('x', -height/2)
+      .attr('y', -60)
+      .attr('transform', 'rotate(-90)')
+      .attr('text-anchor', 'middle')
+      .text('Revenue ($)');
   };
 
   if (isLoading) {
@@ -156,32 +155,52 @@ const Dashboard = () => {
     );
   }
 
-  const revenueData = {
-    labels: dashboardData?.monthlyRevenue.map(item => new Date(item.month).toLocaleDateString('en-US', { month: 'short' })) || [],
-    datasets: [{
-      label: 'Monthly Revenue',
-      data: dashboardData?.monthlyRevenue.map(item => item.revenue) || [],
-      borderColor: 'rgb(75, 192, 192)',
-      tension: 0.1
-    }]
+  // Prepare data for monthly revenue/expenses chart
+  const monthlyData = {
+    labels: dashboardData?.monthlyMetrics.map(item => 
+      new Date(item.month).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+    ).reverse() || [],
+    datasets: [
+      {
+        label: 'Revenue',
+        data: dashboardData?.monthlyMetrics.map(item => +item.revenue).reverse() || [],
+        borderColor: 'rgb(75, 192, 192)',
+        tension: 0.1
+      },
+      {
+        label: 'Expenses',
+        data: dashboardData?.monthlyMetrics.map(item => +item.expenses).reverse() || [],
+        borderColor: 'rgb(255, 99, 132)',
+        tension: 0.1
+      }
+    ]
   };
 
+  // Prepare data for expense categories pie chart
   const expenseData = {
     labels: dashboardData?.categoryExpenses.map(item => item.category) || [],
     datasets: [{
-      data: dashboardData?.categoryExpenses.map(item => item.total) || [],
+      data: dashboardData?.categoryExpenses.map(item => +item.total) || [],
       backgroundColor: [
         '#FF6384',
         '#36A2EB',
         '#FFCE56',
         '#4BC0C0',
-        '#9966FF'
+        '#9966FF',
+        '#FF9F40'
       ]
     }]
   };
 
+  // Calculate KPIs
+  const kpis = dashboardData?.kpis || {};
+  const revenueGrowth = kpis.current_month_revenue && kpis.last_month_revenue
+    ? ((kpis.current_month_revenue - kpis.last_month_revenue) / kpis.last_month_revenue * 100)
+    : 0;
+
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <img src="/api/placeholder/120/40" alt="Company Logo" className="h-10" />
@@ -193,25 +212,90 @@ const Dashboard = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <div className="flex items-center justify-between">
+              <h3 className="text-gray-500">Current Month Revenue</h3>
+              <DollarSign className="text-green-500" />
+            </div>
+            <p className="text-2xl font-bold">${kpis.current_month_revenue?.toLocaleString() || 0}</p>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow">
+            <div className="flex items-center justify-between">
+              <h3 className="text-gray-500">Revenue Growth</h3>
+              {revenueGrowth >= 0 ? 
+                <TrendingUp className="text-green-500" /> : 
+                <TrendingDown className="text-red-500" />
+              }
+            </div>
+            <p className="text-2xl font-bold">{revenueGrowth.toFixed(1)}%</p>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow">
+            <div className="flex items-center justify-between">
+              <h3 className="text-gray-500">Current Month Expenses</h3>
+              <DollarSign className="text-red-500" />
+            </div>
+            <p className="text-2xl font-bold">${kpis.current_month_expenses?.toLocaleString() || 0}</p>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow">
+            <div className="flex items-center justify-between">
+              <h3 className="text-gray-500">Active Departments</h3>
+              <DollarSign className="text-blue-500" />
+            </div>
+            <p className="text-2xl font-bold">{kpis.active_departments || 0}</p>
+          </div>
+        </div>
+
+        {/* Charts */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-lg mb-2">Revenue by Department (D3)</h3>
+            <h3 className="text-lg mb-2">Revenue by Department</h3>
             <div ref={d3Container}></div>
           </div>
           
           <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-lg mb-2">Revenue Trend</h3>
-            <Line data={revenueData} />
+            <h3 className="text-lg mb-2">Revenue vs Expenses</h3>
+            <Line 
+              data={monthlyData}
+              options={{
+                responsive: true,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback: value => `$${value/1000}K`
+                    }
+                  }
+                }
+              }}
+            />
           </div>
           
           <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-lg mb-2">Expenses by Category</h3>
-            <Pie data={expenseData} />
+            <h3 className="text-lg mb-2">Expense Categories</h3>
+            <Pie 
+              data={expenseData}
+              options={{
+                responsive: true,
+                plugins: {
+                  tooltip: {
+                    callbacks: {
+                      label: (context) => `$${context.raw.toLocaleString()}`
+                    }
+                  }
+                }
+              }}
+            />
           </div>
         </div>
 
+        {/* Transactions Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <h3 className="text-lg p-4 border-b">General Ledger</h3>
+          <h3 className="text-lg p-4 border-b">Recent Transactions</h3>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -220,9 +304,8 @@ const Dashboard = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Debit</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Credit</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Balance</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -234,10 +317,17 @@ const Dashboard = () => {
                     <td className="px-6 py-4">{transaction.description}</td>
                     <td className="px-6 py-4">{transaction.category}</td>
                     <td className="px-6 py-4">{transaction.department}</td>
-                    <td className="px-6 py-4">${transaction.debit.toLocaleString()}</td>
-                    <td className="px-6 py-4">${transaction.credit.toLocaleString()}</td>
                     <td className="px-6 py-4">
-                      ${(transaction.credit - transaction.debit).toLocaleString()}
+                      <span className={transaction.credit > 0 ? 'text-green-600' : 'text-red-600'}>
+                        ${Math.abs(transaction.credit || transaction.debit).toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        transaction.credit > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {transaction.credit > 0 ? 'Income' : 'Expense'}
+                      </span>
                     </td>
                   </tr>
                 ))}
