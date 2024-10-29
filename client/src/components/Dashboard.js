@@ -65,15 +65,17 @@ const Dashboard = () => {
   useEffect(() => {
     const renderChart = () => {
       if (dashboardData?.departmentRevenue && d3Container.current) {
-        setTimeout(() => {
-          createD3Chart(dashboardData.departmentRevenue);
-        }, 100);
+        createD3Chart(dashboardData.departmentRevenue);
       }
     };
 
-    renderChart();
+    const initialRender = setTimeout(renderChart, 0);
+    
     window.addEventListener('resize', renderChart);
-    return () => window.removeEventListener('resize', renderChart);
+    return () => {
+      window.removeEventListener('resize', renderChart);
+      clearTimeout(initialRender);
+    };
   }, [dashboardData]);
 
   const createD3Chart = (departmentData) => {
