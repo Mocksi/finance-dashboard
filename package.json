@@ -10,8 +10,6 @@
     "pg": "^8.13.1"
   },
   "scripts": {
-    "start": "node server/server.js",
-    "build": "cd client && npm install && npm run build",
-    "dev": "concurrently \"npm start\" \"cd client && npm start\""
+    "start": "node server/server.js"
   }
 }
