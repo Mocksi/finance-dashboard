@@ -64,17 +64,24 @@ const Dashboard = () => {
 
   useEffect(() => {
     const renderChart = () => {
-      if (dashboardData?.departmentRevenue && d3Container.current) {
+      if (dashboardData?.departmentRevenue && 
+          d3Container.current && 
+          d3Container.current.clientWidth > 0) {
         createD3Chart(dashboardData.departmentRevenue);
+      } else if (dashboardData?.departmentRevenue) {
+        setTimeout(renderChart, 100);
       }
     };
 
-    const initialRender = setTimeout(renderChart, 0);
+    renderChart();
     
-    window.addEventListener('resize', renderChart);
+    const resizeObserver = new ResizeObserver(renderChart);
+    if (d3Container.current) {
+      resizeObserver.observe(d3Container.current);
+    }
+
     return () => {
-      window.removeEventListener('resize', renderChart);
-      clearTimeout(initialRender);
+      resizeObserver.disconnect();
     };
   }, [dashboardData]);
 
