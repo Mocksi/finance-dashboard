@@ -1,8 +1,8 @@
 {
-  "name": "finance-dashboard",
+  "name": "finance-dashboard-backend",
   "version": "1.0.0",
   "private": true,
-  "proxy": "http://localhost:5000",
+  "main": "server/server.js",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -13,8 +13,5 @@
     "start": "node server/server.js",
     "build": "cd client && npm install && npm run build",
     "dev": "concurrently \"npm start\" \"cd client && npm start\""
-  },
-  "devDependencies": {
-    "concurrently": "^9.0.1"
   }
 }
