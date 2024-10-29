@@ -101,21 +101,24 @@ app.get('/api/dashboard-data', authenticateUser, async (req, res) => {
 
         // Monthly comparisons and KPIs
         const kpis = await pool.query(`
+            WITH monthly_totals AS (
+                SELECT 
+                    date_trunc('month', date) as month,
+                    SUM(credit) as revenue,
+                    SUM(debit) as expenses
+                FROM transactions
+                WHERE date >= date_trunc('month', CURRENT_DATE - interval '1 month')
+                GROUP BY date_trunc('month', date)
+            )
             SELECT 
-                SUM(CASE 
-                    WHEN date_trunc('month', date) = date_trunc('month', CURRENT_DATE) 
-                    THEN credit ELSE 0 
-                END) as current_month_revenue,
-                SUM(CASE 
-                    WHEN date_trunc('month', date) = date_trunc('month', CURRENT_DATE) 
-                    THEN debit ELSE 0 
-                END) as current_month_expenses,
-                SUM(CASE 
-                    WHEN date_trunc('month', date) = date_trunc('month', CURRENT_DATE - interval '1 month') 
-                    THEN credit ELSE 0 
-                END) as last_month_revenue,
+                COALESCE((SELECT revenue FROM monthly_totals 
+                    WHERE month = date_trunc('month', CURRENT_DATE)), 0) as current_month_revenue,
+                COALESCE((SELECT expenses FROM monthly_totals 
+                    WHERE month = date_trunc('month', CURRENT_DATE)), 0) as current_month_expenses,
+                COALESCE((SELECT revenue FROM monthly_totals 
+                    WHERE month = date_trunc('month', CURRENT_DATE - interval '1 month')), 0) as last_month_revenue,
                 COUNT(DISTINCT CASE WHEN credit > 0 THEN department END) as active_departments
-            FROM transactions
+            FROM transactions;
         `);
 
         res.json({

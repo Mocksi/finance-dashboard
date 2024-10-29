@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Line, Pie } from 'react-chartjs-2';
 import * as d3 from 'd3';
 import { UserCircle, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
-
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -39,12 +38,10 @@ const Dashboard = () => {
         'Authorization': `Basic ${credentials}`
       };
 
-      // Fetch dashboard data
       const dashboardResponse = await fetch('/api/dashboard-data', { headers });
       const dashboardResult = await dashboardResponse.json();
       setDashboardData(dashboardResult);
 
-      // Fetch transactions
       const transactionsResponse = await fetch('/api/transactions', { headers });
       const transactionsResult = await transactionsResponse.json();
       setTransactions(transactionsResult.transactions);
@@ -75,11 +72,12 @@ const Dashboard = () => {
   }, [dashboardData]);
 
   const createD3Chart = (departmentData) => {
+    if (!departmentData || !departmentData.length) return;
+
     const margin = { top: 20, right: 30, bottom: 60, left: 80 };
     const width = 400 - margin.left - margin.right;
     const height = 300 - margin.top - margin.bottom;
 
-    // Clear existing chart
     d3.select(d3Container.current).selectAll("*").remove();
 
     const svg = d3.select(d3Container.current)
@@ -89,6 +87,8 @@ const Dashboard = () => {
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
+    const validData = departmentData.filter(d => d.revenue > 0);
+
     const x = d3.scaleBand()
       .range([0, width])
       .padding(0.1);
@@ -96,34 +96,32 @@ const Dashboard = () => {
     const y = d3.scaleLinear()
       .range([height, 0]);
 
-    x.domain(departmentData.map(d => d.department));
-    y.domain([0, d3.max(departmentData, d => +d.revenue)]);
+    x.domain(validData.map(d => d.department));
+    y.domain([0, d3.max(validData, d => Number(d.revenue))]);
 
     // Add bars
     svg.selectAll('.bar')
-      .data(departmentData)
+      .data(validData)
       .enter()
       .append('rect')
       .attr('class', 'bar')
       .attr('x', d => x(d.department))
       .attr('width', x.bandwidth())
-      .attr('y', d => y(+d.revenue))
-      .attr('height', d => height - y(+d.revenue))
-      .attr('fill', 'steelblue')
+      .attr('y', d => y(Number(d.revenue)))
+      .attr('height', d => height - y(Number(d.revenue)))
+      .attr('fill', '#4299E1')  // Tailwind blue-500
       .on('mouseover', function(event, d) {
-        d3.select(this).attr('fill', '#2c5282');
-        
-        // Add tooltip
+        d3.select(this).attr('fill', '#2B6CB0');  // Tailwind blue-700
         svg.append('text')
-          .attr('class', 'tooltip')
+          .attr('class', 'value-label')
           .attr('x', x(d.department) + x.bandwidth() / 2)
-          .attr('y', y(+d.revenue) - 5)
+          .attr('y', y(Number(d.revenue)) - 5)
           .attr('text-anchor', 'middle')
-          .text(`$${(+d.revenue).toLocaleString()}`);
+          .text(`$${(Number(d.revenue)).toLocaleString()}`);
       })
       .on('mouseout', function() {
-        d3.select(this).attr('fill', 'steelblue');
-        svg.selectAll('.tooltip').remove();
+        d3.select(this).attr('fill', '#4299E1');
+        svg.selectAll('.value-label').remove();
       });
 
     // Add axes
@@ -138,24 +136,24 @@ const Dashboard = () => {
       .call(d3.axisLeft(y)
         .tickFormat(d => `$${d/1000}K`));
 
-    // Add axis labels
+    // Add Y axis label
     svg.append('text')
-      .attr('x', -height/2)
-      .attr('y', -60)
       .attr('transform', 'rotate(-90)')
-      .attr('text-anchor', 'middle')
+      .attr('y', 0 - margin.left)
+      .attr('x', 0 - (height / 2))
+      .attr('dy', '1em')
+      .style('text-anchor', 'middle')
       .text('Revenue ($)');
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+        <div className="text-xl">Loading dashboard data...</div>
       </div>
     );
   }
 
-  // Prepare data for monthly revenue/expenses chart
   const monthlyData = {
     labels: dashboardData?.monthlyMetrics.map(item => 
       new Date(item.month).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
@@ -163,44 +161,42 @@ const Dashboard = () => {
     datasets: [
       {
         label: 'Revenue',
-        data: dashboardData?.monthlyMetrics.map(item => +item.revenue).reverse() || [],
-        borderColor: 'rgb(75, 192, 192)',
+        data: dashboardData?.monthlyMetrics.map(item => Number(item.revenue)).reverse() || [],
+        borderColor: '#4299E1',  // Tailwind blue-500
         tension: 0.1
       },
       {
         label: 'Expenses',
-        data: dashboardData?.monthlyMetrics.map(item => +item.expenses).reverse() || [],
-        borderColor: 'rgb(255, 99, 132)',
+        data: dashboardData?.monthlyMetrics.map(item => Number(item.expenses)).reverse() || [],
+        borderColor: '#F56565',  // Tailwind red-500
         tension: 0.1
       }
     ]
   };
 
-  // Prepare data for expense categories pie chart
   const expenseData = {
-    labels: dashboardData?.categoryExpenses.map(item => item.category) || [],
+    labels: dashboardData?.categoryExpenses?.map(item => item.category) || [],
     datasets: [{
-      data: dashboardData?.categoryExpenses.map(item => +item.total) || [],
+      data: dashboardData?.categoryExpenses?.map(item => Number(item.total)) || [],
       backgroundColor: [
-        '#FF6384',
-        '#36A2EB',
-        '#FFCE56',
-        '#4BC0C0',
-        '#9966FF',
-        '#FF9F40'
+        '#F56565',  // red-500
+        '#4299E1',  // blue-500
+        '#F6AD55',  // orange-400
+        '#48BB78',  // green-500
+        '#9F7AEA',  // purple-500
       ]
     }]
   };
 
-  // Calculate KPIs
   const kpis = dashboardData?.kpis || {};
   const revenueGrowth = kpis.current_month_revenue && kpis.last_month_revenue
-    ? ((kpis.current_month_revenue - kpis.last_month_revenue) / kpis.last_month_revenue * 100)
+    ? (kpis.last_month_revenue > 0 
+        ? ((kpis.current_month_revenue - kpis.last_month_revenue) / kpis.last_month_revenue * 100)
+        : 0)
     : 0;
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <img src="/api/placeholder/120/40" alt="Company Logo" className="h-10" />
@@ -212,14 +208,15 @@ const Dashboard = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="flex items-center justify-between">
               <h3 className="text-gray-500">Current Month Revenue</h3>
               <DollarSign className="text-green-500" />
             </div>
-            <p className="text-2xl font-bold">${kpis.current_month_revenue?.toLocaleString() || 0}</p>
+            <p className="text-2xl font-bold">
+              ${Number(kpis.current_month_revenue || 0).toLocaleString()}
+            </p>
           </div>
           
           <div className="bg-white p-4 rounded-lg shadow">
@@ -230,7 +227,9 @@ const Dashboard = () => {
                 <TrendingDown className="text-red-500" />
               }
             </div>
-            <p className="text-2xl font-bold">{revenueGrowth.toFixed(1)}%</p>
+            <p className="text-2xl font-bold">
+              {!isNaN(revenueGrowth) ? `${revenueGrowth.toFixed(1)}%` : '0%'}
+            </p>
           </div>
 
           <div className="bg-white p-4 rounded-lg shadow">
@@ -238,7 +237,9 @@ const Dashboard = () => {
               <h3 className="text-gray-500">Current Month Expenses</h3>
               <DollarSign className="text-red-500" />
             </div>
-            <p className="text-2xl font-bold">${kpis.current_month_expenses?.toLocaleString() || 0}</p>
+            <p className="text-2xl font-bold">
+              ${Number(kpis.current_month_expenses || 0).toLocaleString()}
+            </p>
           </div>
 
           <div className="bg-white p-4 rounded-lg shadow">
@@ -250,7 +251,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Charts */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg mb-2">Revenue by Department</h3>
@@ -293,7 +293,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Transactions Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <h3 className="text-lg p-4 border-b">Recent Transactions</h3>
           <div className="overflow-x-auto">
@@ -319,7 +318,7 @@ const Dashboard = () => {
                     <td className="px-6 py-4">{transaction.department}</td>
                     <td className="px-6 py-4">
                       <span className={transaction.credit > 0 ? 'text-green-600' : 'text-red-600'}>
-                        ${Math.abs(transaction.credit || transaction.debit).toLocaleString()}
+                        ${(Number(transaction.credit) || Number(transaction.debit)).toLocaleString()}
                       </span>
                     </td>
                     <td className="px-6 py-4">
