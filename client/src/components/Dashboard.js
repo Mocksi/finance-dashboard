@@ -375,7 +375,8 @@ const Dashboard = () => {
                     </td>
                     <td className="px-6 py-4">{transaction.description}</td>
                     <td className="px-6 py-4">{transaction.category}</td>
-                    <td className="px-6 py-4">{transaction.department}</td>
+                    <td className="px-6 py-4">{transaction.department
+                      <td className="px-6 py-4">{transaction.department}</td>
                     <td className="px-6 py-4">
                       <span className={transaction.credit > 0 ? 'text-green-600' : 'text-red-600'}>
                         ${(Number(transaction.credit) || Number(transaction.debit)).toLocaleString()}
