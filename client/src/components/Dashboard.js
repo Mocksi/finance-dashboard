@@ -107,7 +107,7 @@ const Dashboard = () => {
     x.domain(validData.map(d => d.department));
     y.domain([0, d3.max(validData, d => Number(d.revenue) * 1.1)]);
 
-    // Add gradient definition
+    // Gradient for bars
     const gradient = svg.append("defs")
       .append("linearGradient")
       .attr("id", "bar-gradient")
@@ -124,7 +124,7 @@ const Dashboard = () => {
       .attr("offset", "100%")
       .attr("stop-color", "#4299E1");
 
-    // Add bars
+    // Add bars with animation
     const bars = svg.selectAll('.bar')
       .data(validData)
       .enter()
@@ -136,7 +136,6 @@ const Dashboard = () => {
       .attr('height', 0)
       .attr('fill', 'url(#bar-gradient)');
 
-    // Add animation
     bars.transition()
       .duration(800)
       .delay((d, i) => i * 100)
@@ -305,51 +304,55 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg mb-2">Revenue by Department</h3>
-            <div ref={d3Container} className="min-h-[300px]" />
+            <div ref={d3Container} className="min-h-[300px] w-full" />
           </div>
           
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg mb-2">Revenue vs Expenses</h3>
-            <Line 
-              data={monthlyData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      callback: value => `$${value/1000}K`
+            <div className="h-[300px]">
+              <Line 
+                data={monthlyData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        callback: value => `$${value/1000}K`
+                      }
+                    }
+                  },
+                  plugins: {
+                    tooltip: {
+                      callbacks: {
+                        label: (context) => `$${context.raw.toLocaleString()}`
+                      }
                     }
                   }
-                },
-                plugins: {
-                  tooltip: {
-                    callbacks: {
-                      label: (context) => `$${context.raw.toLocaleString()}`
-                    }
-                  }
-                }
-              }}
-            />
+                }}
+              />
+            </div>
           </div>
           
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg mb-2">Expense Categories</h3>
-            <Pie 
-              data={expenseData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  tooltip: {
-                    callbacks: {
-                      label: (context) => `$${context.raw.toLocaleString()}`
+            <div className="h-[300px]">
+              <Pie 
+                data={expenseData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    tooltip: {
+                      callbacks: {
+                        label: (context) => `$${context.raw.toLocaleString()}`
+                      }
                     }
                   }
-                }
-              }}
-            />
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -375,8 +378,7 @@ const Dashboard = () => {
                     </td>
                     <td className="px-6 py-4">{transaction.description}</td>
                     <td className="px-6 py-4">{transaction.category}</td>
-                    <td className="px-6 py-4">{transaction.department
-                      <td className="px-6 py-4">{transaction.department}</td>
+                    <td className="px-6 py-4">{transaction.department}</td>
                     <td className="px-6 py-4">
                       <span className={transaction.credit > 0 ? 'text-green-600' : 'text-red-600'}>
                         ${(Number(transaction.credit) || Number(transaction.debit)).toLocaleString()}
