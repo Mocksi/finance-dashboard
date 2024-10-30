@@ -35,6 +35,9 @@ const Dashboard = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageSize] = useState(100);
 
   const fetchData = async () => {
     try {
@@ -47,9 +50,13 @@ const Dashboard = () => {
       const dashboardResult = await dashboardResponse.json();
       setDashboardData(dashboardResult);
 
-      const transactionsResponse = await fetch('/api/transactions', { headers });
+      const transactionsResponse = await fetch(
+        `/api/transactions?page=${currentPage}&pageSize=${pageSize}&sortKey=${sortConfig.key}&sortDir=${sortConfig.direction}`, 
+        { headers }
+      );
       const transactionsResult = await transactionsResponse.json();
       setTransactions(transactionsResult.transactions);
+      setTotalPages(transactionsResult.totalPages);
 
       setIsLoading(false);
     } catch (error) {
@@ -60,7 +67,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentPage, sortConfig]);
 
   useEffect(() => {
     const interval = setInterval(fetchData, 300000);
@@ -267,32 +274,6 @@ const Dashboard = () => {
     }
   };
 
-  const sortedTransactions = React.useMemo(() => {
-    const sortedData = [...transactions];
-    sortedData.sort((a, b) => {
-      if (sortConfig.key === 'date') {
-        return sortConfig.direction === 'asc' 
-          ? new Date(a.date) - new Date(b.date)
-          : new Date(b.date) - new Date(a.date);
-      }
-      if (sortConfig.key === 'amount') {
-        const aAmount = Number(a.credit) || Number(a.debit);
-        const bAmount = Number(b.credit) || Number(b.debit);
-        return sortConfig.direction === 'asc' 
-          ? aAmount - bAmount
-          : bAmount - aAmount;
-      }
-      if (a[sortConfig.key] < b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-    return sortedData;
-  }, [transactions, sortConfig]);
-
   const requestSort = (key) => {
     setSortConfig((prevConfig) => ({
       key,
@@ -301,6 +282,94 @@ const Dashboard = () => {
           ? 'desc' 
           : 'asc',
     }));
+  };
+
+  const PaginationControls = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-t">
+        <div className="flex items-center">
+          <p className="text-sm text-gray-700">
+            Showing page {currentPage} of {totalPages}
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className={`px-3 py-1 rounded-md ${
+              currentPage === 1 
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            } border`}
+          >
+            ←
+          </button>
+          
+          {startPage > 1 && (
+            <>
+              <button
+                onClick={() => setCurrentPage(1)}
+                className="px-3 py-1 border rounded-md hover:bg-gray-50"
+              >
+                1
+              </button>
+              {startPage > 2 && <span className="px-2">...</span>}
+            </>
+          )}
+
+          {pages.map(page => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`px-3 py-1 rounded-md ${
+                currentPage === page
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              } border`}
+            >
+              {page}
+            </button>
+          ))}
+
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && <span className="px-2">...</span>}
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                className="px-3 py-1 border rounded-md hover:bg-gray-50"
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-1 rounded-md ${
+              currentPage === totalPages 
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            } border`}
+          >
+            →
+          </button>
+        </div>
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -482,7 +551,7 @@ const Dashboard = () => {
                     <th 
                       key={key}
                       onClick={() => requestSort(key)}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     >
                       <div className="flex items-center gap-1">
                         {label}
@@ -497,7 +566,7 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {sortedTransactions.map((transaction, index) => (
+                {transactions.map((transaction, index) => (
                   <tr 
                     key={transaction.id || index} 
                     onClick={() => handleTransactionClick(transaction)}
@@ -632,12 +701,13 @@ const Dashboard = () => {
                     type="number"
                     step="0.01"
                     min="0"
-                    value={(selectedTransaction.credit || selectedTransaction.debit || '').toString()}
+                    value={(Number(selectedTransaction.credit) || Number(selectedTransaction.debit) || '').toString()}
                     onChange={(e) => {
                       const value = parseFloat(e.target.value) || 0;
                       setSelectedTransaction({
                         ...selectedTransaction,
-                        [selectedTransaction.credit > 0 ? 'credit' : 'debit']: value
+                        credit: selectedTransaction.credit > 0 ? value : null,
+                        debit: selectedTransaction.credit > 0 ? null : value
                       });
                       setFormErrors({ ...formErrors, amount: '' });
                     }}
@@ -667,6 +737,7 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+      <PaginationControls />
     </div>
   );
 };

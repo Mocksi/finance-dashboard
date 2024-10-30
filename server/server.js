@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const path = require('path');
+const transactionsRouter = require('./routes/transactions');
 
 const app = express();
 
@@ -133,28 +134,7 @@ app.get('/api/dashboard-data', authenticateUser, async (req, res) => {
     }
 });
 
-app.get('/api/transactions', authenticateUser, async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT 
-                id,
-                date,
-                description,
-                category,
-                department,
-                debit,
-                credit,
-                (credit - debit) as amount
-            FROM transactions 
-            ORDER BY date DESC
-            LIMIT 100
-        `);
-        res.json({ transactions: result.rows });
-    } catch (err) {
-        console.error('Error fetching transactions:', err);
-        res.status(500).json({ error: 'Database error', details: err.message });
-    }
-});
+app.use('/api/transactions', transactionsRouter);
 
 // Serve React app - this should be after all API routes
 app.get('*', (req, res) => {
