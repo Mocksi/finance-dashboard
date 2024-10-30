@@ -19,6 +19,7 @@ const auth = async (req, res, next) => {
         
         if (email === 'admin@company.com' && password === 'testpass123') {
             console.log('Login successful');
+            req.user = { id: 1, email: 'admin@company.com' };
             next();
         } else {
             console.log('Invalid credentials');

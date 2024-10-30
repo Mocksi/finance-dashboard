@@ -29,24 +29,22 @@ router.get('/', auth, async (req, res) => {
       ? `COALESCE(credit, -debit) ${dir}`
       : `"${key}" ${dir}`;
 
-    // Get total count
+    // Remove user_id from WHERE clause for now
     const countResult = await pool.query(
-      'SELECT COUNT(*) FROM transactions WHERE user_id = $1',
-      [req.user.id]
+      'SELECT COUNT(*) FROM transactions'
     );
     const total = parseInt(countResult.rows[0].count);
 
-    // Get paginated and sorted transactions
+    // Remove user_id from WHERE clause
     const result = await pool.query(
       `SELECT 
         id, date, description, category, department, 
         credit, debit,
         COALESCE(credit, -debit) as amount
-       FROM transactions 
-       WHERE user_id = $1
-       ORDER BY ${sortClause}
-       LIMIT $2 OFFSET $3`,
-      [req.user.id, pageSize, offset]
+      FROM transactions 
+      ORDER BY ${sortClause}
+      LIMIT $1 OFFSET $2`,
+      [pageSize, offset]
     );
 
     res.json({
@@ -78,12 +76,12 @@ router.put('/:id', auth, async (req, res) => {
            description = $2, 
            category = $3, 
            department = $4, 
-           credit = $5, 
-           debit = $6,
+           credit = COALESCE($5, 0), 
+           debit = COALESCE($6, 0),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7
+       WHERE id = $7::uuid
        RETURNING *`,
-      [date, description, category, department, credit, debit, id]
+      [date, description, category || '', department, credit, debit, id]
     );
 
     if (result.rows.length === 0) {
@@ -93,14 +91,10 @@ router.put('/:id', auth, async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating transaction:', error);
-    if (error.code === '23505') { // PostgreSQL unique violation
-      res.status(400).json({ error: 'Duplicate transaction' });
-    } else {
-      res.status(500).json({ 
-        error: 'Failed to update transaction',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined 
-      });
-    }
+    res.status(500).json({ 
+      error: 'Failed to update transaction',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 
@@ -111,10 +105,10 @@ router.post('/', auth, async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO transactions 
-        (user_id, date, description, category, department, credit, debit)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [req.user.id, date, description, category, department, credit, debit]
+        (date, description, category, department, credit, debit)
+      VALUES ($1, $2, $3, $4, COALESCE($5, 0), COALESCE($6, 0))
+      RETURNING *`,
+      [date, description, category || '', department, credit, debit]
     );
 
     res.status(201).json(result.rows[0]);
