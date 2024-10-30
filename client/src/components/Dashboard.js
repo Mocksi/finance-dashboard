@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Line, Pie } from 'react-chartjs-2';
 import * as d3 from 'd3';
-import { UserCircle, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { UserCircle, TrendingUp, TrendingDown, DollarSign, X } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -30,6 +30,10 @@ const Dashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const d3Container = useRef(null);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [isSlideoutOpen, setIsSlideoutOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   const fetchData = async () => {
     try {
@@ -201,6 +205,65 @@ const Dashboard = () => {
       .style('text-anchor', 'middle')
       .style('font-size', '12px')
       .text('Revenue ($)');
+  };
+
+  const handleTransactionClick = (transaction) => {
+    setSelectedTransaction(transaction);
+    setIsSlideoutOpen(true);
+  };
+
+  const validateTransaction = (transaction) => {
+    const errors = {};
+    
+    if (!transaction.date) errors.date = 'Date is required';
+    if (!transaction.description?.trim()) errors.description = 'Description is required';
+    if (!transaction.category?.trim()) errors.category = 'Category is required';
+    if (!transaction.department?.trim()) errors.department = 'Department is required';
+    
+    const amount = transaction.credit || transaction.debit;
+    if (!amount || amount <= 0) errors.amount = 'Amount must be greater than 0';
+
+    return errors;
+  };
+
+  const handleSaveTransaction = async () => {
+    const errors = validateTransaction(selectedTransaction);
+    setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const credentials = localStorage.getItem('credentials');
+      const response = await fetch(`/api/transactions/${selectedTransaction.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(selectedTransaction),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update transaction');
+      }
+
+      setTransactions(prevTransactions =>
+        prevTransactions.map(t =>
+          t.id === selectedTransaction.id ? selectedTransaction : t
+        )
+      );
+
+      setIsSlideoutOpen(false);
+      await fetchData();
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+      alert('Failed to save transaction. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
@@ -381,7 +444,11 @@ const Dashboard = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {transactions.map((transaction, index) => (
-                  <tr key={transaction.id || index}>
+                  <tr 
+                    key={transaction.id || index} 
+                    onClick={() => handleTransactionClick(transaction)}
+                    className="cursor-pointer hover:bg-gray-50"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       {new Date(transaction.date).toLocaleDateString()}
                     </td>
@@ -406,6 +473,142 @@ const Dashboard = () => {
             </table>
           </div>
         </div>
+      </div>
+
+      <div className={`fixed inset-y-0 right-0 w-96 bg-white shadow-xl transform ${
+        isSlideoutOpen ? 'translate-x-0' : 'translate-x-full'
+      } transition-transform duration-300 ease-in-out`}>
+        {selectedTransaction && (
+          <div className="h-full flex flex-col">
+            <div className="px-6 py-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-medium">Edit Transaction</h3>
+              <button 
+                onClick={() => setIsSlideoutOpen(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Date</label>
+                  <input
+                    type="date"
+                    value={selectedTransaction.date.split('T')[0]}
+                    onChange={(e) => {
+                      setSelectedTransaction({
+                        ...selectedTransaction,
+                        date: e.target.value
+                      });
+                      setFormErrors({ ...formErrors, date: '' });
+                    }}
+                    className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 
+                      ${formErrors.date ? 'border-red-300' : 'border-gray-300'}`}
+                  />
+                  {formErrors.date && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.date}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <input
+                    type="text"
+                    value={selectedTransaction.description}
+                    onChange={(e) => {
+                      setSelectedTransaction({
+                        ...selectedTransaction,
+                        description: e.target.value
+                      });
+                      setFormErrors({ ...formErrors, description: '' });
+                    }}
+                    className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 
+                      ${formErrors.description ? 'border-red-300' : 'border-gray-300'}`}
+                  />
+                  {formErrors.description && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Category</label>
+                  <input
+                    type="text"
+                    value={selectedTransaction.category}
+                    onChange={(e) => {
+                      setSelectedTransaction({
+                        ...selectedTransaction,
+                        category: e.target.value
+                      });
+                      setFormErrors({ ...formErrors, category: '' });
+                    }}
+                    className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 
+                      ${formErrors.category ? 'border-red-300' : 'border-gray-300'}`}
+                  />
+                  {formErrors.category && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.category}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Department</label>
+                  <input
+                    type="text"
+                    value={selectedTransaction.department}
+                    onChange={(e) => {
+                      setSelectedTransaction({
+                        ...selectedTransaction,
+                        department: e.target.value
+                      });
+                      setFormErrors({ ...formErrors, department: '' });
+                    }}
+                    className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 
+                      ${formErrors.department ? 'border-red-300' : 'border-gray-300'}`}
+                  />
+                  {formErrors.department && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.department}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Amount</label>
+                  <input
+                    type="number"
+                    value={selectedTransaction.credit || selectedTransaction.debit}
+                    onChange={(e) => {
+                      setSelectedTransaction({
+                        ...selectedTransaction,
+                        [selectedTransaction.credit > 0 ? 'credit' : 'debit']: e.target.value
+                      });
+                      setFormErrors({ ...formErrors, amount: '' });
+                    }}
+                    className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 
+                      ${formErrors.amount ? 'border-red-300' : 'border-gray-300'}`}
+                  />
+                  {formErrors.amount && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.amount}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t">
+              <button
+                className={`w-full px-4 py-2 rounded-md text-white ${
+                  isSaving 
+                    ? 'bg-blue-400 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+                onClick={handleSaveTransaction}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
