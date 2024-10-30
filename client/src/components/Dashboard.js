@@ -34,6 +34,7 @@ const Dashboard = () => {
   const [isSlideoutOpen, setIsSlideoutOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
 
   const fetchData = async () => {
     try {
@@ -266,6 +267,42 @@ const Dashboard = () => {
     }
   };
 
+  const sortedTransactions = React.useMemo(() => {
+    const sortedData = [...transactions];
+    sortedData.sort((a, b) => {
+      if (sortConfig.key === 'date') {
+        return sortConfig.direction === 'asc' 
+          ? new Date(a.date) - new Date(b.date)
+          : new Date(b.date) - new Date(a.date);
+      }
+      if (sortConfig.key === 'amount') {
+        const aAmount = Number(a.credit) || Number(a.debit);
+        const bAmount = Number(b.credit) || Number(b.debit);
+        return sortConfig.direction === 'asc' 
+          ? aAmount - bAmount
+          : bAmount - aAmount;
+      }
+      if (a[sortConfig.key] < b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (a[sortConfig.key] > b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+    return sortedData;
+  }, [transactions, sortConfig]);
+
+  const requestSort = (key) => {
+    setSortConfig((prevConfig) => ({
+      key,
+      direction: 
+        prevConfig.key === key && prevConfig.direction === 'asc' 
+          ? 'desc' 
+          : 'asc',
+    }));
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -434,16 +471,33 @@ const Dashboard = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                  {[
+                    { key: 'date', label: 'Date' },
+                    { key: 'description', label: 'Description' },
+                    { key: 'category', label: 'Category' },
+                    { key: 'department', label: 'Department' },
+                    { key: 'amount', label: 'Amount' },
+                    { key: 'type', label: 'Type' }
+                  ].map(({ key, label }) => (
+                    <th 
+                      key={key}
+                      onClick={() => requestSort(key)}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                    >
+                      <div className="flex items-center gap-1">
+                        {label}
+                        {sortConfig.key === key && (
+                          <span className="text-gray-400">
+                            {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {transactions.map((transaction, index) => (
+                {sortedTransactions.map((transaction, index) => (
                   <tr 
                     key={transaction.id || index} 
                     onClick={() => handleTransactionClick(transaction)}
@@ -576,11 +630,14 @@ const Dashboard = () => {
                   <label className="block text-sm font-medium text-gray-700">Amount</label>
                   <input
                     type="number"
-                    value={selectedTransaction.credit || selectedTransaction.debit}
+                    step="0.01"
+                    min="0"
+                    value={(selectedTransaction.credit || selectedTransaction.debit || '').toString()}
                     onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0;
                       setSelectedTransaction({
                         ...selectedTransaction,
-                        [selectedTransaction.credit > 0 ? 'credit' : 'debit']: e.target.value
+                        [selectedTransaction.credit > 0 ? 'credit' : 'debit']: value
                       });
                       setFormErrors({ ...formErrors, amount: '' });
                     }}
