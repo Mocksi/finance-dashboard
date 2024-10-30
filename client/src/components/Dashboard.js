@@ -228,7 +228,7 @@ const Dashboard = ({ onLogout }) => {
     if (!transaction.category?.trim()) errors.category = 'Category is required';
     if (!transaction.department?.trim()) errors.department = 'Department is required';
     
-    const amount = transaction.credit || transaction.debit;
+    const amount = transaction.type === 'income' ? transaction.credit : transaction.debit;
     if (!amount || amount <= 0) errors.amount = 'Amount must be greater than 0';
 
     return errors;
@@ -663,16 +663,16 @@ const Dashboard = ({ onLogout }) => {
                     <button
                       type="button"
                       onClick={() => {
-                        const currentAmount = Number(selectedTransaction.credit) || Number(selectedTransaction.debit) || 0;
+                        const currentAmount = selectedTransaction.credit || selectedTransaction.debit || null;
                         setSelectedTransaction({
                           ...selectedTransaction,
                           type: 'expense',
                           credit: null,
-                          debit: currentAmount || null
+                          debit: currentAmount
                         });
                       }}
                       className={`px-4 py-2 rounded-l-md border ${
-                        (!selectedTransaction.credit && selectedTransaction.type === 'expense')
+                        selectedTransaction.type === 'expense'
                           ? 'bg-red-100 text-red-800 border-red-300' 
                           : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                       }`}
@@ -682,16 +682,16 @@ const Dashboard = ({ onLogout }) => {
                     <button
                       type="button"
                       onClick={() => {
-                        const currentAmount = Number(selectedTransaction.credit) || Number(selectedTransaction.debit) || 0;
+                        const currentAmount = selectedTransaction.credit || selectedTransaction.debit || null;
                         setSelectedTransaction({
                           ...selectedTransaction,
                           type: 'income',
-                          credit: currentAmount || null,
+                          credit: currentAmount,
                           debit: null
                         });
                       }}
                       className={`px-4 py-2 rounded-r-md border-t border-r border-b -ml-px ${
-                        (selectedTransaction.credit || selectedTransaction.type === 'income')
+                        selectedTransaction.type === 'income'
                           ? 'bg-green-100 text-green-800 border-green-300' 
                           : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                       }`}
@@ -787,9 +787,13 @@ const Dashboard = ({ onLogout }) => {
                     type="number"
                     step="0.01"
                     min="0"
-                    value={(Number(selectedTransaction.credit) || Number(selectedTransaction.debit) || '').toString()}
+                    value={
+                      selectedTransaction.type === 'income' 
+                        ? (selectedTransaction.credit || '')
+                        : (selectedTransaction.debit || '')
+                    }
                     onChange={(e) => {
-                      const value = parseFloat(e.target.value) || 0;
+                      const value = e.target.value === '' ? null : parseFloat(e.target.value);
                       setSelectedTransaction({
                         ...selectedTransaction,
                         credit: selectedTransaction.type === 'income' ? value : null,
