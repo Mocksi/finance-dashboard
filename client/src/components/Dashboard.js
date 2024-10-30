@@ -381,7 +381,7 @@ const Dashboard = ({ onLogout }) => {
       department: '',
       credit: null,
       debit: null,
-      type: 'expense' // default to expense
+      type: 'expense'
     });
     setIsSlideoutOpen(true);
   };
@@ -666,12 +666,13 @@ const Dashboard = ({ onLogout }) => {
                         const currentAmount = Number(selectedTransaction.credit) || Number(selectedTransaction.debit) || 0;
                         setSelectedTransaction({
                           ...selectedTransaction,
+                          type: 'expense',
                           credit: null,
-                          debit: currentAmount
+                          debit: currentAmount || null
                         });
                       }}
                       className={`px-4 py-2 rounded-l-md border ${
-                        selectedTransaction.debit 
+                        (!selectedTransaction.credit && selectedTransaction.type === 'expense')
                           ? 'bg-red-100 text-red-800 border-red-300' 
                           : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                       }`}
@@ -684,12 +685,13 @@ const Dashboard = ({ onLogout }) => {
                         const currentAmount = Number(selectedTransaction.credit) || Number(selectedTransaction.debit) || 0;
                         setSelectedTransaction({
                           ...selectedTransaction,
-                          credit: currentAmount,
+                          type: 'income',
+                          credit: currentAmount || null,
                           debit: null
                         });
                       }}
                       className={`px-4 py-2 rounded-r-md border-t border-r border-b -ml-px ${
-                        selectedTransaction.credit 
+                        (selectedTransaction.credit || selectedTransaction.type === 'income')
                           ? 'bg-green-100 text-green-800 border-green-300' 
                           : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                       }`}
@@ -790,8 +792,8 @@ const Dashboard = ({ onLogout }) => {
                       const value = parseFloat(e.target.value) || 0;
                       setSelectedTransaction({
                         ...selectedTransaction,
-                        credit: selectedTransaction.credit > 0 ? value : null,
-                        debit: selectedTransaction.credit > 0 ? null : value
+                        credit: selectedTransaction.type === 'income' ? value : null,
+                        debit: selectedTransaction.type === 'expense' ? value : null
                       });
                       setFormErrors({ ...formErrors, amount: '' });
                     }}
