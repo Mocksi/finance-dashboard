@@ -14,14 +14,19 @@ CREATE TABLE users (
 -- Financial transactions table
 CREATE TABLE transactions (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id uuid NOT NULL REFERENCES users(id),
     date DATE NOT NULL,
     description TEXT NOT NULL,
     category VARCHAR(100) NOT NULL,
     debit DECIMAL(15,2) DEFAULT 0,
     credit DECIMAL(15,2) DEFAULT 0,
     department VARCHAR(100),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add index for better query performance
+CREATE INDEX idx_transactions_user_date ON transactions(user_id, date);
 
 -- Insert test user (password is 'testpass123')
 INSERT INTO users (email, password_hash) VALUES 

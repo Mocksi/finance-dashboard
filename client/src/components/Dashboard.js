@@ -245,8 +245,14 @@ const Dashboard = () => {
     setIsSaving(true);
     try {
       const credentials = localStorage.getItem('credentials');
-      const response = await fetch(`/api/transactions/${selectedTransaction.id}`, {
-        method: 'PUT',
+      const isNewTransaction = !selectedTransaction.id;
+      const method = isNewTransaction ? 'POST' : 'PUT';
+      const url = isNewTransaction 
+        ? '/api/transactions' 
+        : `/api/transactions/${selectedTransaction.id}`;
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/json',
@@ -255,20 +261,14 @@ const Dashboard = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update transaction');
+        throw new Error(`Failed to ${isNewTransaction ? 'create' : 'update'} transaction`);
       }
 
-      setTransactions(prevTransactions =>
-        prevTransactions.map(t =>
-          t.id === selectedTransaction.id ? selectedTransaction : t
-        )
-      );
-
       setIsSlideoutOpen(false);
-      await fetchData();
+      await fetchData(); // Refresh the list
     } catch (error) {
       console.error('Error saving transaction:', error);
-      alert('Failed to save transaction. Please try again.');
+      alert(`Failed to ${isNewTransaction ? 'create' : 'update'} transaction. Please try again.`);
     } finally {
       setIsSaving(false);
     }
@@ -282,6 +282,7 @@ const Dashboard = () => {
           ? 'desc' 
           : 'asc',
     }));
+    setCurrentPage(1);
   };
 
   const PaginationControls = () => {
@@ -370,6 +371,19 @@ const Dashboard = () => {
         </div>
       </div>
     );
+  };
+
+  const handleNewTransaction = () => {
+    setSelectedTransaction({
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+      category: '',
+      department: '',
+      credit: null,
+      debit: null,
+      type: 'expense' // default to expense
+    });
+    setIsSlideoutOpen(true);
   };
 
   if (isLoading) {
@@ -535,7 +549,15 @@ const Dashboard = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <h3 className="text-lg p-4 border-b">Recent Transactions</h3>
+          <div className="p-4 border-b flex justify-between items-center">
+            <h3 className="text-lg">Recent Transactions</h3>
+            <button
+              onClick={handleNewTransaction}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              New Transaction
+            </button>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -566,32 +588,46 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {transactions.map((transaction, index) => (
-                  <tr 
-                    key={transaction.id || index} 
-                    onClick={() => handleTransactionClick(transaction)}
-                    className="cursor-pointer hover:bg-gray-50"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {new Date(transaction.date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">{transaction.description}</td>
-                    <td className="px-6 py-4">{transaction.category}</td>
-                    <td className="px-6 py-4">{transaction.department}</td>
-                    <td className="px-6 py-4">
-                      <span className={transaction.credit > 0 ? 'text-green-600' : 'text-red-600'}>
-                        ${(Number(transaction.credit) || Number(transaction.debit)).toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        transaction.credit > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {transaction.credit > 0 ? 'Income' : 'Expense'}
-                      </span>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                      Loading transactions...
                     </td>
                   </tr>
-                ))}
+                ) : transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                      No transactions found
+                    </td>
+                  </tr>
+                ) : (
+                  transactions.map((transaction, index) => (
+                    <tr 
+                      key={transaction.id || index} 
+                      onClick={() => handleTransactionClick(transaction)}
+                      className="cursor-pointer hover:bg-gray-50"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {new Date(transaction.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">{transaction.description}</td>
+                      <td className="px-6 py-4">{transaction.category}</td>
+                      <td className="px-6 py-4">{transaction.department}</td>
+                      <td className="px-6 py-4">
+                        <span className={transaction.credit > 0 ? 'text-green-600' : 'text-red-600'}>
+                          ${(Number(transaction.credit) || Number(transaction.debit)).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          transaction.credit > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {transaction.credit > 0 ? 'Income' : 'Expense'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -615,6 +651,48 @@ const Dashboard = () => {
             
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Transaction Type</label>
+                  <div className="mt-1 flex rounded-md shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentAmount = Number(selectedTransaction.credit) || Number(selectedTransaction.debit) || 0;
+                        setSelectedTransaction({
+                          ...selectedTransaction,
+                          credit: null,
+                          debit: currentAmount
+                        });
+                      }}
+                      className={`px-4 py-2 rounded-l-md border ${
+                        selectedTransaction.debit 
+                          ? 'bg-red-100 text-red-800 border-red-300' 
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      Expense
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentAmount = Number(selectedTransaction.credit) || Number(selectedTransaction.debit) || 0;
+                        setSelectedTransaction({
+                          ...selectedTransaction,
+                          credit: currentAmount,
+                          debit: null
+                        });
+                      }}
+                      className={`px-4 py-2 rounded-r-md border-t border-r border-b -ml-px ${
+                        selectedTransaction.credit 
+                          ? 'bg-green-100 text-green-800 border-green-300' 
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      Income
+                    </button>
+                  </div>
+                </div>
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Date</label>
                   <input
