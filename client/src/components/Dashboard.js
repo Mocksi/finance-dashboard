@@ -216,7 +216,11 @@ const Dashboard = ({ onLogout }) => {
   };
 
   const handleTransactionClick = (transaction) => {
-    setSelectedTransaction(transaction);
+    setSelectedTransaction({
+      ...transaction,
+      type: transaction.credit ? 'income' : 'expense',
+      amount: transaction.credit || transaction.debit || ''
+    });
     setIsSlideoutOpen(true);
   };
 
@@ -228,8 +232,10 @@ const Dashboard = ({ onLogout }) => {
     if (!transaction.category?.trim()) errors.category = 'Category is required';
     if (!transaction.department?.trim()) errors.department = 'Department is required';
     
-    const amount = transaction.type === 'income' ? transaction.credit : transaction.debit;
-    if (!amount || amount <= 0) errors.amount = 'Amount must be greater than 0';
+    const amount = parseFloat(transaction.amount);
+    if (!amount || isNaN(amount) || amount <= 0) {
+      errors.amount = 'Amount must be a number greater than 0';
+    }
 
     return errors;
   };
@@ -241,6 +247,13 @@ const Dashboard = ({ onLogout }) => {
     if (Object.keys(errors).length > 0) {
       return;
     }
+
+    const amount = parseFloat(selectedTransaction.amount);
+    const transactionToSave = {
+      ...selectedTransaction,
+      credit: selectedTransaction.type === 'income' ? amount : null,
+      debit: selectedTransaction.type === 'expense' ? amount : null,
+    };
 
     setIsSaving(true);
     try {
@@ -257,7 +270,7 @@ const Dashboard = ({ onLogout }) => {
           'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(selectedTransaction),
+        body: JSON.stringify(transactionToSave),
       });
 
       if (!response.ok) {
@@ -265,7 +278,7 @@ const Dashboard = ({ onLogout }) => {
       }
 
       setIsSlideoutOpen(false);
-      await fetchData(); // Refresh the list
+      await fetchData();
     } catch (error) {
       console.error('Error saving transaction:', error);
       alert(`Failed to ${isNewTransaction ? 'create' : 'update'} transaction. Please try again.`);
@@ -379,8 +392,7 @@ const Dashboard = ({ onLogout }) => {
       description: '',
       category: '',
       department: '',
-      credit: null,
-      debit: null,
+      amount: '',
       type: 'expense'
     });
     setIsSlideoutOpen(true);
@@ -784,20 +796,12 @@ const Dashboard = ({ onLogout }) => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Amount</label>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={
-                      selectedTransaction.type === 'income' 
-                        ? (selectedTransaction.credit || '')
-                        : (selectedTransaction.debit || '')
-                    }
+                    type="text"
+                    value={selectedTransaction.amount}
                     onChange={(e) => {
-                      const value = e.target.value === '' ? null : parseFloat(e.target.value);
                       setSelectedTransaction({
                         ...selectedTransaction,
-                        credit: selectedTransaction.type === 'income' ? value : null,
-                        debit: selectedTransaction.type === 'expense' ? value : null
+                        amount: e.target.value
                       });
                       setFormErrors({ ...formErrors, amount: '' });
                     }}
