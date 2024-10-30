@@ -216,10 +216,13 @@ const Dashboard = ({ onLogout }) => {
   };
 
   const handleTransactionClick = (transaction) => {
+    const type = transaction.debit ? 'expense' : 'income';
+    const amount = transaction.debit || transaction.credit || '';
+    
     setSelectedTransaction({
       ...transaction,
-      type: transaction.credit ? 'income' : 'expense',
-      amount: transaction.credit || transaction.debit || ''
+      type,
+      amount: amount.toString()
     });
     setIsSlideoutOpen(true);
   };
@@ -393,7 +396,9 @@ const Dashboard = ({ onLogout }) => {
       category: '',
       department: '',
       amount: '',
-      type: 'expense'
+      type: 'expense',
+      credit: null,
+      debit: null
     });
     setIsSlideoutOpen(true);
   };
