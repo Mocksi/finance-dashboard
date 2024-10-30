@@ -1,42 +1,57 @@
-import React, { useState } from 'react';
-import { ChartJS } from 'chart.js/auto';
-import Dashboard from './components/Dashboard';
+import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
+import Dashboard from './components/Dashboard';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authError, setAuthError] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    // Check for stored credentials on load
+    const storedCredentials = localStorage.getItem('credentials');
+    if (storedCredentials) {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   const handleLogin = async (email, password) => {
     try {
-      // Store credentials for future API calls
+      // Create and store base64 credentials
       const credentials = btoa(`${email}:${password}`);
-      localStorage.setItem('credentials', credentials);
       
-      // Test credentials with API
-      const response = await fetch('/api/transactions', {
+      // Test the credentials with a fetch request
+      const response = await fetch('/api/dashboard-data', {
         headers: {
-          'Authorization': `Basic ${credentials}`
+          'Authorization': `Basic ${credentials}`,
+          'Accept': 'application/json'
         }
       });
 
       if (response.ok) {
+        // Store credentials only if the request was successful
+        localStorage.setItem('credentials', credentials);
         setIsAuthenticated(true);
-        setAuthError('');
+        setError('');
       } else {
-        setAuthError('Invalid credentials');
+        setError('Invalid credentials');
       }
-    } catch (error) {
-      setAuthError('Server error. Please try again.');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Login failed. Please try again.');
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('credentials');
+    setIsAuthenticated(false);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div>
       {!isAuthenticated ? (
-        <Login onLogin={handleLogin} error={authError} />
+        <Login onLogin={handleLogin} error={error} />
       ) : (
-        <Dashboard />
+        <Dashboard onLogout={handleLogout} />
       )}
     </div>
   );

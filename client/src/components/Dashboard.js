@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Line, Pie } from 'react-chartjs-2';
 import * as d3 from 'd3';
-import { UserCircle, TrendingUp, TrendingDown, DollarSign, X } from 'lucide-react';
+import { UserCircle, TrendingUp, TrendingDown, DollarSign, X, LogOut } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -25,7 +25,7 @@ ChartJS.register(
   Legend
 );
 
-const Dashboard = () => {
+const Dashboard = ({ onLogout }) => {
   const [dashboardData, setDashboardData] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -444,7 +444,13 @@ const Dashboard = () => {
           <img src="/api/placeholder/120/40" alt="Company Logo" className="h-10" />
           <div className="flex items-center gap-3">
             <span className="text-gray-700">admin@company.com</span>
-            <UserCircle size={40} className="text-gray-400" />
+            <button 
+              onClick={onLogout}
+              className="flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <LogOut size={20} className="mr-1" />
+              Logout
+            </button>
           </div>
         </div>
       </div>
