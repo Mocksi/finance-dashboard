@@ -33,6 +33,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [invoices, setInvoices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const d3Container = useRef(null);
@@ -42,7 +43,6 @@ const Dashboard = () => {
       try {
         const credentials = localStorage.getItem('credentials');
         
-        // Redirect to login if no credentials exist
         if (!credentials) {
           navigate('/login');
           return;
@@ -53,41 +53,30 @@ const Dashboard = () => {
           'Content-Type': 'application/json'
         };
 
-        // Fetch dashboard data
-        const dashboardResponse = await fetch('https://finance-dashboard-tfn6.onrender.com/api/dashboard-data', { 
-          headers 
-        });
+        const [dashboardResponse, invoicesResponse] = await Promise.all([
+          fetch('https://finance-dashboard-tfn6.onrender.com/api/dashboard-data', { headers }),
+          fetch('https://finance-dashboard-tfn6.onrender.com/api/invoices', { headers })
+        ]);
 
-        // Fetch transactions data
-        const transactionsResponse = await fetch('https://finance-dashboard-tfn6.onrender.com/api/transactions', { 
-          headers 
-        });
-
-        if (dashboardResponse.status === 401 || transactionsResponse.status === 401) {
+        if (dashboardResponse.status === 401 || invoicesResponse.status === 401) {
           localStorage.removeItem('credentials');
           navigate('/login');
           return;
         }
 
-        if (!dashboardResponse.ok || !transactionsResponse.ok) {
-          throw new Error('Failed to fetch data');
-        }
-
-        const dashboardResult = await dashboardResponse.json();
-        const transactionsResult = await transactionsResponse.json();
+        const [dashboardResult, invoicesResult] = await Promise.all([
+          dashboardResponse.json(),
+          invoicesResponse.json()
+        ]);
 
         setDashboardData(dashboardResult);
-        setTransactions(Array.isArray(transactionsResult.transactions) ? transactionsResult.transactions : []);
+        setTransactions(dashboardResult.transactions || []);
+        setInvoices(invoicesResult.invoices || []);
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError(error.message);
         setIsLoading(false);
-        
-        if (error.message.includes('401')) {
-          localStorage.removeItem('credentials');
-          navigate('/login');
-        }
       }
     };
 
@@ -171,7 +160,7 @@ const Dashboard = () => {
 
   // Chart.js Data and Options
   const monthlyData = useMemo(() => {
-    if (!transactions?.length || !dashboardData?.monthlyMetrics) return {
+    if (!dashboardData?.monthlyMetrics) return {
       labels: [],
       datasets: []
     };
@@ -180,7 +169,7 @@ const Dashboard = () => {
     const projectedRevenue = invoices
       .filter(inv => inv.status === 'sent')
       .reduce((acc, inv) => {
-        const month = new Date(inv.dueDate).toLocaleString('default', { month: 'short' });
+        const month = new Date(inv.due_date).toLocaleString('default', { month: 'short' });
         acc[month] = (acc[month] || 0) + Number(inv.amount);
         return acc;
       }, {});
@@ -205,7 +194,7 @@ const Dashboard = () => {
           borderColor: '#93C5FD',
           backgroundColor: 'transparent',
           borderWidth: 2,
-          borderDash: [5, 5] // Dashed line for projections
+          borderDash: [5, 5]
         },
         {
           label: 'Expenses',
@@ -216,7 +205,7 @@ const Dashboard = () => {
         }
       ]
     };
-  }, [dashboardData, transactions, invoices]);
+  }, [dashboardData, invoices]);
 
   const chartOptions = {
     responsive: true,
