@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const Login = ({ onLogin, error }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+const Login = () => {
   const navigate = useNavigate();
+  const [credentials, setCredentials] = useState({
+    email: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onLogin(email, password);
-  };
-
-  const handleLogin = async (credentials) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Prevent default form submission
+    
     try {
       const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/login', {
         method: 'POST',
@@ -22,34 +22,41 @@ const Login = ({ onLogin, error }) => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error('Login failed');
       }
 
       const data = await response.json();
       
-      // Make sure the token is being saved correctly
       if (data.token) {
         localStorage.setItem('token', data.token);
-        // Navigate to dashboard or transactions page
         navigate('/dashboard');
       } else {
-        throw new Error('No token received from server');
+        setError('Invalid credentials');
       }
     } catch (error) {
       console.error('Login error:', error);
-      // Handle login error
+      setError('Login failed. Please try again.');
     }
   };
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setCredentials(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Finance Dashboard
+            Sign in to your account
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <input type="hidden" name="remember" value="true" />
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email" className="sr-only">Email address</label>
@@ -57,11 +64,12 @@ const Login = ({ onLogin, error }) => {
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={credentials.email}
+                onChange={handleChange}
               />
             </div>
             <div>
@@ -70,11 +78,12 @@ const Login = ({ onLogin, error }) => {
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="current-password"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={credentials.password}
+                onChange={handleChange}
               />
             </div>
           </div>

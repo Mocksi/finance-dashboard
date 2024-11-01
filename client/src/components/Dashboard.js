@@ -8,7 +8,8 @@ import {
   Title,
   Tooltip,
   Legend,
-  ArcElement
+  ArcElement,
+  Filler
 } from 'chart.js';
 import { Line, Pie } from 'react-chartjs-2';
 import * as d3 from 'd3';
@@ -23,7 +24,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  ArcElement
+  ArcElement,
+  Filler
 );
 
 const Dashboard = () => {
