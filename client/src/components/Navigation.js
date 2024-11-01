@@ -21,12 +21,12 @@ const Navigation = ({ onLogout }) => {
   ];
 
   return (
-    <div className="h-screen w-64 bg-gray-800 text-white flex flex-col">
+    <div className="fixed inset-y-0 left-0 w-64 bg-gray-800 text-white flex flex-col z-10">
       <div className="p-4 border-b border-gray-700">
         <h1 className="text-xl font-bold">Finance Dashboard</h1>
       </div>
       
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon;
