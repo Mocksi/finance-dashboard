@@ -138,7 +138,7 @@ const Dashboard = () => {
         svg.append('g')
           .call(d3.axisLeft(y)
             .ticks(5)
-            .tickFormat(d => `$${d3.format(',.0f')(d)}`))
+            .tickFormat(d => `$${d/1000}K`))
           .selectAll('text')
           .style('font-size', '12px');
 
@@ -152,7 +152,7 @@ const Dashboard = () => {
           .attr('width', x.bandwidth())
           .attr('y', d => y(Number(d.revenue)))
           .attr('height', d => height - y(Number(d.revenue)))
-          .attr('fill', '#4299E1');
+          .attr('fill', '#3B82F6');
       }
     };
 
@@ -173,16 +173,18 @@ const Dashboard = () => {
       {
         label: 'Revenue',
         data: dashboardData?.monthlyMetrics?.map(d => Number(d.revenue)) || [],
-        borderColor: 'rgba(34, 197, 94, 1)',
-        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+        borderColor: '#60A5FA',
+        backgroundColor: 'transparent',
         fill: true,
+        borderWidth: 2
       },
       {
         label: 'Expenses',
         data: dashboardData?.monthlyMetrics?.map(d => Number(d.expenses)) || [],
-        borderColor: 'rgba(239, 68, 68, 1)',
-        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+        borderColor: '#F87171',
+        backgroundColor: 'transparent',
         fill: true,
+        borderWidth: 2
       },
     ],
   };
@@ -192,52 +194,31 @@ const Dashboard = () => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'bottom',
+        position: 'top',
+        align: 'start',
         labels: {
-          boxWidth: 12,
-          padding: 15,
-          usePointStyle: true,
-          font: {
-            size: 12
-          }
+          boxWidth: 40,
+          usePointStyle: false,
+          padding: 20
         }
       },
       title: {
-        display: true,
-        text: 'Monthly Revenue vs Expenses'
+        display: false
       }
     },
     scales: {
-      x: {
-        type: 'category',
-        display: true,
-        title: {
-          display: true,
-          text: 'Month'
-        },
+      y: {
         ticks: {
-          maxRotation: 45,
-          minRotation: 45,
-          font: {
-            size: 12
-          }
+          callback: value => `$${value/1000}K`,
+          stepSize: 20000
+        },
+        grid: {
+          color: '#E5E7EB'
         }
       },
-      y: {
-        type: 'linear',
-        display: true,
-        title: {
-          display: true,
-          text: 'Amount ($)'
-        },
-        ticks: {
-          beginAtZero: true,
-          font: {
-            size: 12
-          },
-          callback: function(value) {
-            return `$${value.toLocaleString()}`;
-          }
+      x: {
+        grid: {
+          display: false
         }
       }
     }
@@ -262,22 +243,19 @@ const Dashboard = () => {
 
   const pieOptions = {
     responsive: true,
-    maintainAspectRatio: false,
+    maintainAspectRatio: true,
     plugins: {
       legend: {
-        position: 'bottom',
+        position: 'right',
+        align: 'center',
         labels: {
-          boxWidth: 12,
           padding: 15,
-          usePointStyle: true,
-          font: {
-            size: 12
-          }
+          usePointStyle: false,
+          boxWidth: 15
         }
       },
       title: {
-        display: true,
-        text: 'Expense Categories'
+        display: false
       }
     }
   };
@@ -335,8 +313,10 @@ const Dashboard = () => {
       datasets: [{
         data: Object.values(aggregated),
         backgroundColor: [
-          '#EF4444', '#F97316', '#F59E0B', '#84CC16', '#14B8A6',
-          '#F43F5E', '#FB923C', '#FACC15', '#A3E635', '#2DD4BF'
+          '#EF4444', // Marketing (red)
+          '#3B82F6', // Operations (blue)
+          '#F59E0B', // Facilities (orange)
+          '#10B981'  // Training (green)
         ]
       }]
     };
@@ -347,7 +327,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="p-6 ml-64"> {/* Added ml-64 to accommodate fixed sidebar */}
+    <div className="p-6 ml-64">
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">Financial Overview</h1>
       
       {/* Summary Cards */}
@@ -400,36 +380,32 @@ const Dashboard = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue by Department */}
+        {/* Revenue by Department - D3 Chart */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue by Department</h2>
-          {departmentRevenueData.labels.length > 0 ? (
-            <Pie data={departmentRevenueData} options={pieOptions} />
-          ) : (
-            <div className="h-[300px] flex items-center justify-center">
-              <p className="text-gray-500">No revenue data available</p>
-            </div>
-          )}
+          <div ref={d3Container} className="h-[300px]"></div>
         </div>
 
         {/* Revenue vs Expenses - Line Chart */}
-        <div className="bg-white rounded-lg shadow p-6 h-80 flex flex-col">
+        <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue vs Expenses</h2>
-          <div className="flex-1">
+          <div className="h-[300px] relative">
             <Line data={monthlyData} options={chartOptions} />
           </div>
         </div>
 
-        {/* Expense Categories */}
+        {/* Expense Categories - Pie Chart */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Expense Categories</h2>
-          {expenseCategoriesData.labels.length > 0 ? (
-            <Pie data={expenseCategoriesData} options={pieOptions} />
-          ) : (
-            <div className="h-[300px] flex items-center justify-center">
-              <p className="text-gray-500">No expense data available</p>
-            </div>
-          )}
+          <div className="h-[300px] relative">
+            {expenseCategoriesData.labels.length > 0 ? (
+              <Pie data={expenseCategoriesData} options={pieOptions} />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <p className="text-gray-500">No expense data available</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

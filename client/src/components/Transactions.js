@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Transactions = () => {
@@ -11,6 +11,22 @@ const Transactions = () => {
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [formErrors, setFormErrors] = useState({});
   const [error, setError] = useState(null);
+
+  const newTransaction = {
+    id: Date.now(), // Temporary ID for new transactions
+    date: new Date().toISOString().split('T')[0],
+    description: '',
+    category: '',
+    department: '',
+    type: 'expense',
+    credit: 0,
+    debit: 0
+  };
+
+  const addNewTransaction = () => {
+    setSelectedTransaction(newTransaction);
+    setIsSlideoutOpen(true);
+  };
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -181,14 +197,27 @@ const Transactions = () => {
 
   return (
     <div className="p-6 ml-64">
-      <h1 className="text-2xl font-semibold mb-6">Transactions</h1>
-      
+      <div className="sm:flex sm:items-center mb-6">
+        <div className="sm:flex-auto">
+          <h1 className="text-2xl font-semibold text-gray-900">Transactions</h1>
+        </div>
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+          <button
+            onClick={addNewTransaction}
+            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Transaction
+          </button>
+        </div>
+      </div>
+
       {transactions.length === 0 ? (
         <div className="text-center py-10 bg-white rounded-lg shadow">
           <p className="text-gray-500">No transactions found</p>
         </div>
       ) : (
-        <table className="min-w-full bg-white shadow rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr>
               <th 
@@ -230,21 +259,27 @@ const Transactions = () => {
           </thead>
           <tbody>
             {sortedTransactions.map((transaction) => (
-              <tr key={transaction.id} className="border-t">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(transaction.date).toLocaleDateString()}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{transaction.description}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{transaction.category}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{transaction.department}</td>
-                <td className={`px-6 py-4 whitespace-nowrap text-sm text-right ${transaction.credit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ${Math.abs(Number(transaction.credit) || Number(transaction.debit)).toLocaleString()}
+              <tr 
+                key={transaction.id} 
+                onClick={() => openSlideout(transaction)}
+                className="border-t hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+              >
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {new Date(transaction.date).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                  <button 
-                    onClick={() => openSlideout(transaction)}
-                    className="text-blue-600 hover:text-blue-900"
-                  >
-                    Edit
-                  </button>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {transaction.description}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {transaction.category}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {transaction.department}
+                </td>
+                <td className={`px-6 py-4 whitespace-nowrap text-sm text-right ${
+                  transaction.credit > 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  ${Math.abs(Number(transaction.credit) || Number(transaction.debit)).toLocaleString()}
                 </td>
               </tr>
             ))}
