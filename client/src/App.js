@@ -1,59 +1,102 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import Transactions from './components/Transactions';
+import Invoices from './components/Invoices';
+import Reports from './components/Reports';
+import Settings from './components/Settings';
+import Navigation from './components/Navigation';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [error, setError] = useState('');
+// Create a protected route wrapper
+const ProtectedRoute = ({ children }) => {
+  const isAuthenticated = localStorage.getItem('credentials') !== null;
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
 
-  useEffect(() => {
-    // Check for stored credentials on load
-    const storedCredentials = localStorage.getItem('credentials');
-    if (storedCredentials) {
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  const handleLogin = async (email, password) => {
-    try {
-      // Create and store base64 credentials
-      const credentials = btoa(`${email}:${password}`);
-      
-      // Test the credentials with a fetch request
-      const response = await fetch('/api/dashboard-data', {
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Accept': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        // Store credentials only if the request was successful
-        localStorage.setItem('credentials', credentials);
-        setIsAuthenticated(true);
-        setError('');
-      } else {
-        setError('Invalid credentials');
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Login failed. Please try again.');
-    }
-  };
-
+// Create a layout component that includes navigation
+const Layout = ({ children }) => {
+  const navigate = useNavigate();
+  
   const handleLogout = () => {
     localStorage.removeItem('credentials');
-    setIsAuthenticated(false);
+    navigate('/login');
   };
 
   return (
-    <div>
-      {!isAuthenticated ? (
-        <Login onLogin={handleLogin} error={error} />
-      ) : (
-        <Dashboard onLogout={handleLogout} />
-      )}
+    <div className="flex">
+      <Navigation onLogout={handleLogout} />
+      <main className="flex-1 bg-gray-100 min-h-screen">
+        {children}
+      </main>
     </div>
+  );
+};
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/transactions"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Transactions />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/invoices"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Invoices />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Reports />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Settings />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
