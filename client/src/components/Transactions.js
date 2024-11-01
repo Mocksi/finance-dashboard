@@ -8,20 +8,29 @@ const Transactions = () => {
   const [isSlideoutOpen, setIsSlideoutOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [formErrors, setFormErrors] = useState({});
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const response = await fetch('/api/transactions');
+        const response = await fetch('/api/transactions', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
-        setTransactions(data.transactions);
+        setTransactions(Array.isArray(data.transactions) ? data.transactions : []);
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching transactions:', error);
+        setError(error.message);
         setIsLoading(false);
-        // Should add:
-        // setError(error.message);
-        // Show error state in UI
       }
     };
 
@@ -103,87 +112,122 @@ const Transactions = () => {
   };
 
   const sortedTransactions = useMemo(() => {
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+      return [];
+    }
+
     return [...transactions].sort((a, b) => {
       if (sortConfig.key === 'amount') {
-        return sortConfig.direction === 'asc' ? a.amount - b.amount : b.amount - a.amount;
+        const aAmount = Number(a.credit || 0) - Number(a.debit || 0);
+        const bAmount = Number(b.credit || 0) - Number(b.debit || 0);
+        return sortConfig.direction === 'asc' ? aAmount - bAmount : bAmount - aAmount;
       } else {
-        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+        const aValue = a[sortConfig.key] || '';
+        const bValue = b[sortConfig.key] || '';
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       }
     });
   }, [transactions, sortConfig]);
 
+  if (error) {
+    return (
+      <div className="p-6 ml-64">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+          <button 
+            className="underline ml-2"
+            onClick={() => window.location.reload()}
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
-    return <div className="text-center mt-10">Loading Transactions...</div>;
+    return (
+      <div className="p-6 ml-64 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 ml-64"> {/* Added ml-64 to accommodate fixed sidebar */}
+    <div className="p-6 ml-64">
       <h1 className="text-2xl font-semibold mb-6">Transactions</h1>
-
-      <table className="min-w-full bg-white shadow rounded-lg overflow-hidden">
-        <thead>
-          <tr>
-            <th 
-              scope="col" 
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-              onClick={() => requestSort('date')}
-            >
-              Date {sortConfig.key === 'date' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-            </th>
-            <th 
-              scope="col" 
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-              onClick={() => requestSort('description')}
-            >
-              Description {sortConfig.key === 'description' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-            </th>
-            <th 
-              scope="col" 
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-              onClick={() => requestSort('category')}
-            >
-              Category {sortConfig.key === 'category' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-            </th>
-            <th 
-              scope="col" 
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-              onClick={() => requestSort('department')}
-            >
-              Department {sortConfig.key === 'department' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-            </th>
-            <th 
-              scope="col" 
-              className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-              onClick={() => requestSort('amount')}
-            >
-              Amount {sortConfig.key === 'amount' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedTransactions.map((transaction) => (
-            <tr key={transaction.id} className="border-t">
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(transaction.date).toLocaleDateString()}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{transaction.description}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{transaction.category}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{transaction.department}</td>
-              <td className={`px-6 py-4 whitespace-nowrap text-sm text-right ${transaction.credit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${Math.abs(Number(transaction.credit) || Number(transaction.debit)).toLocaleString()}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                <button 
-                  onClick={() => openSlideout(transaction)}
-                  className="text-blue-600 hover:text-blue-900"
-                >
-                  Edit
-                </button>
-              </td>
+      
+      {transactions.length === 0 ? (
+        <div className="text-center py-10 bg-white rounded-lg shadow">
+          <p className="text-gray-500">No transactions found</p>
+        </div>
+      ) : (
+        <table className="min-w-full bg-white shadow rounded-lg overflow-hidden">
+          <thead>
+            <tr>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                onClick={() => requestSort('date')}
+              >
+                Date {sortConfig.key === 'date' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                onClick={() => requestSort('description')}
+              >
+                Description {sortConfig.key === 'description' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                onClick={() => requestSort('category')}
+              >
+                Category {sortConfig.key === 'category' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                onClick={() => requestSort('department')}
+              >
+                Department {sortConfig.key === 'department' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                onClick={() => requestSort('amount')}
+              >
+                Amount {sortConfig.key === 'amount' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sortedTransactions.map((transaction) => (
+              <tr key={transaction.id} className="border-t">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(transaction.date).toLocaleDateString()}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{transaction.description}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{transaction.category}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{transaction.department}</td>
+                <td className={`px-6 py-4 whitespace-nowrap text-sm text-right ${transaction.credit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ${Math.abs(Number(transaction.credit) || Number(transaction.debit)).toLocaleString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                  <button 
+                    onClick={() => openSlideout(transaction)}
+                    className="text-blue-600 hover:text-blue-900"
+                  >
+                    Edit
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       {/* Slideout */}
       {isSlideoutOpen && selectedTransaction && (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -241,6 +241,56 @@ const Dashboard = () => {
       }
     }
   };
+
+  // Fix the data aggregation for department revenue
+  const departmentRevenueData = useMemo(() => {
+    if (!transactions?.length) return null;
+    
+    const aggregated = transactions.reduce((acc, transaction) => {
+      // Only include credit transactions (revenue)
+      if (!transaction.credit || transaction.credit <= 0) return acc;
+      
+      const dept = transaction.department || 'Uncategorized';
+      acc[dept] = (acc[dept] || 0) + parseFloat(transaction.credit);
+      return acc;
+    }, {});
+
+    return {
+      labels: Object.keys(aggregated),
+      datasets: [{
+        data: Object.values(aggregated),
+        backgroundColor: [
+          '#4F46E5', '#7C3AED', '#EC4899', '#F59E0B', '#10B981',
+          '#6366F1', '#8B5CF6', '#F472B6', '#FBBF24', '#34D399'
+        ]
+      }]
+    };
+  }, [transactions]);
+
+  // Fix the data aggregation for expense categories
+  const expenseCategoriesData = useMemo(() => {
+    if (!transactions?.length) return null;
+    
+    const aggregated = transactions.reduce((acc, transaction) => {
+      // Only include debit transactions (expenses)
+      if (!transaction.debit || transaction.debit <= 0) return acc;
+      
+      const category = transaction.category || 'Uncategorized';
+      acc[category] = (acc[category] || 0) + parseFloat(transaction.debit);
+      return acc;
+    }, {});
+
+    return {
+      labels: Object.keys(aggregated),
+      datasets: [{
+        data: Object.values(aggregated),
+        backgroundColor: [
+          '#EF4444', '#F97316', '#F59E0B', '#84CC16', '#14B8A6',
+          '#F43F5E', '#FB923C', '#FACC15', '#A3E635', '#2DD4BF'
+        ]
+      }]
+    };
+  }, [transactions]);
 
   if (isLoading) {
     return <div className="text-center mt-10">Loading Dashboard...</div>;
