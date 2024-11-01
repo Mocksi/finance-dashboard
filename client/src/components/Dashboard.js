@@ -111,7 +111,7 @@ const Dashboard = () => {
 
   // D3 Bar Chart is handled in the useEffect
   useEffect(() => {
-    if (d3Container.current && dashboardData?.departmentMetrics) {
+    if (d3Container.current && dashboardData?.departmentRevenue) {
       // Clear any existing SVG
       d3.select(d3Container.current).selectAll("*").remove();
 
@@ -128,7 +128,7 @@ const Dashboard = () => {
         .attr('transform', `translate(${margin.left},${margin.top})`);
 
       // Process data
-      const data = dashboardData.departmentMetrics;
+      const data = dashboardData.departmentRevenue;
 
       // Create scales
       const x = d3.scaleBand()
@@ -140,7 +140,7 @@ const Dashboard = () => {
 
       // Set domains
       x.domain(data.map(d => d.department));
-      y.domain([0, d3.max(data, d => d.revenue)]);
+      y.domain([0, d3.max(data, d => Number(d.revenue))]);
 
       // Add X axis
       svg.append('g')
@@ -166,8 +166,8 @@ const Dashboard = () => {
         .attr('class', 'bar')
         .attr('x', d => x(d.department))
         .attr('width', x.bandwidth())
-        .attr('y', d => y(d.revenue))
-        .attr('height', d => height - y(d.revenue))
+        .attr('y', d => y(Number(d.revenue)))
+        .attr('height', d => height - y(Number(d.revenue)))
         .attr('fill', '#4299E1')
         .on('mouseover', function(event, d) {
           d3.select(this)
@@ -178,9 +178,9 @@ const Dashboard = () => {
           svg.append('text')
             .attr('class', 'value-label')
             .attr('x', x(d.department) + x.bandwidth() / 2)
-            .attr('y', y(d.revenue) - 5)
+            .attr('y', y(Number(d.revenue)) - 5)
             .attr('text-anchor', 'middle')
-            .text(`$${d3.format(',')(d.revenue)}`);
+            .text(`$${d3.format(',')(Number(d.revenue))}`);
         })
         .on('mouseout', function() {
           d3.select(this)
@@ -222,7 +222,7 @@ const Dashboard = () => {
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
     }
-  }, [dashboardData?.departmentMetrics]);
+  }, [dashboardData?.departmentRevenue]);
 
   if (isLoading) {
     return (

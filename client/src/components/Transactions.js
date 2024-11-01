@@ -219,12 +219,12 @@ const Transactions = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                    ${transaction.credit 
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
+                    ${transaction.debit 
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-green-100 text-green-800'
                     }`}
                   >
-                    {transaction.credit ? 'Income' : 'Expense'}
+                    {transaction.debit ? 'Expense' : 'Income'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -236,11 +236,11 @@ const Transactions = () => {
                   {transaction.department}
                 </td>
                 <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${
-                  transaction.credit ? 'text-green-600' : 'text-red-600'
+                  transaction.debit ? 'text-red-600' : 'text-green-600'
                 }`}>
-                  ${transaction.credit 
-                    ? transaction.credit.toLocaleString()
-                    : (-transaction.debit).toLocaleString()}
+                  ${transaction.debit 
+                    ? Number(transaction.debit).toLocaleString()
+                    : Number(transaction.credit).toLocaleString()}
                 </td>
               </tr>
             ))}
