@@ -180,6 +180,12 @@ const Transactions = () => {
               </th>
               <th 
                 scope="col" 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Type
+              </th>
+              <th 
+                scope="col" 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                 onClick={() => requestSort('category')}
               >
@@ -214,13 +220,25 @@ const Transactions = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {transaction.description}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {transaction.category}
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    ${transaction.credit 
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {transaction.credit ? 'Income' : 'Expense'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    {transaction.category}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {transaction.department}
                 </td>
-                <td className={`px-6 py-4 whitespace-nowrap text-sm text-right ${
+                <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${
                   transaction.credit ? 'text-green-600' : 'text-red-600'
                 }`}>
                   ${(transaction.credit || transaction.debit || 0).toLocaleString()}
