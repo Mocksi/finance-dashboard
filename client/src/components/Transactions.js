@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Transactions = () => {
@@ -19,6 +19,9 @@ const Transactions = () => {
       } catch (error) {
         console.error('Error fetching transactions:', error);
         setIsLoading(false);
+        // Should add:
+        // setError(error.message);
+        // Show error state in UI
       }
     };
 
@@ -99,6 +102,18 @@ const Transactions = () => {
     }
   };
 
+  const sortedTransactions = useMemo(() => {
+    return [...transactions].sort((a, b) => {
+      if (sortConfig.key === 'amount') {
+        return sortConfig.direction === 'asc' ? a.amount - b.amount : b.amount - a.amount;
+      } else {
+        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      }
+    });
+  }, [transactions, sortConfig]);
+
   if (isLoading) {
     return <div className="text-center mt-10">Loading Transactions...</div>;
   }
@@ -148,7 +163,7 @@ const Transactions = () => {
           </tr>
         </thead>
         <tbody>
-          {transactions.map((transaction) => (
+          {sortedTransactions.map((transaction) => (
             <tr key={transaction.id} className="border-t">
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(transaction.date).toLocaleDateString()}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{transaction.description}</td>
@@ -343,7 +358,8 @@ const Transactions = () => {
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 };
