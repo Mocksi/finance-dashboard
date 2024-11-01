@@ -54,7 +54,7 @@ const Transactions = () => {
 
   const handleTransactionClick = (transaction) => {
     const type = transaction.credit ? 'income' : 'expense';
-    const amount = Math.abs(transaction.credit || transaction.debit).toString();
+    const amount = Math.abs(Number(transaction.credit) || Number(transaction.debit)).toString();
     
     setSelectedTransaction({
       ...transaction,
@@ -219,12 +219,12 @@ const Transactions = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                    ${transaction.credit 
+                    ${transaction.credit > 0
                       ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
                     }`}
                   >
-                    {transaction.credit ? 'Income' : 'Expense'}
+                    {transaction.credit > 0 ? 'Income' : 'Expense'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -236,9 +236,9 @@ const Transactions = () => {
                   {transaction.department}
                 </td>
                 <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${
-                  transaction.credit ? 'text-green-600' : 'text-red-600'
+                  transaction.credit > 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  ${Math.abs(transaction.credit || transaction.debit).toLocaleString()}
+                  ${Math.abs(Number(transaction.credit) || Number(transaction.debit)).toLocaleString()}
                 </td>
               </tr>
             ))}
@@ -395,7 +395,8 @@ const Transactions = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Amount</label>
                         <input
-                          type="text"
+                          type="number"
+                          step="0.01"
                           value={selectedTransaction.amount}
                           onChange={(e) => {
                             setSelectedTransaction({

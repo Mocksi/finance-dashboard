@@ -51,7 +51,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 300000);
+    const interval = setInterval(fetchData, 300000); // Refresh every 5 minutes
     return () => clearInterval(interval);
   }, []);
 
@@ -105,14 +105,18 @@ const Dashboard = () => {
     }]
   };
 
+  useEffect(() => {
+    console.log('Expense Categories Data:', expenseData);
+  }, [expenseData]);
+
   // D3 Bar Chart is handled in the useEffect
   useEffect(() => {
     if (d3Container.current && dashboardData?.departmentRevenue) {
       // Clear existing chart
       d3.select(d3Container.current).selectAll('*').remove();
 
-      const margin = { top: 30, right: 30, bottom: 70, left: 80 };
-      const width = 800 - margin.left - margin.right;
+      const margin = { top: 30, right: 30, bottom: 100, left: 80 }; // Increased bottom margin
+      const width = d3Container.current.clientWidth - margin.left - margin.right;
       const height = 400 - margin.top - margin.bottom;
 
       const svg = d3.select(d3Container.current)
@@ -133,21 +137,24 @@ const Dashboard = () => {
       const data = dashboardData.departmentRevenue;
 
       x.domain(data.map(d => d.department));
-      y.domain([0, d3.max(data, d => Number(d.revenue))]);
+      y.domain([0, d3.max(data, d => Number(d.revenue)) * 1.1]); // Added 10% padding on Y-axis
 
       // Add X axis
       svg.append('g')
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(x))
         .selectAll('text')
-        .attr('transform', 'translate(-10,5)rotate(-45)')
-        .style('text-anchor', 'end');
+        .attr('transform', 'translate(-10,10)rotate(-45)') // Adjusted rotation
+        .style('text-anchor', 'end')
+        .style('font-size', '12px'); // Reduced font size
 
       // Add Y axis
       svg.append('g')
         .call(d3.axisLeft(y)
           .ticks(5)
-          .tickFormat(d => `$${d3.format(',.0f')(d)}`));
+          .tickFormat(d => `$${d3.format(',.0f')(d)}`))
+        .selectAll('text')
+        .style('font-size', '12px'); // Reduced font size
 
       // Add bars
       svg.selectAll('.bar')
@@ -173,6 +180,7 @@ const Dashboard = () => {
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false, // Allow charts to adjust height
     scales: {
       x: {
         type: 'category',
@@ -188,6 +196,9 @@ const Dashboard = () => {
         title: {
           display: true,
           text: 'Amount ($)'
+        },
+        ticks: {
+          beginAtZero: true
         }
       }
     },
@@ -204,6 +215,7 @@ const Dashboard = () => {
 
   const pieOptions = {
     responsive: true,
+    maintainAspectRatio: false, // Allow pie chart to adjust height
     plugins: {
       legend: {
         position: 'bottom',
@@ -232,7 +244,7 @@ const Dashboard = () => {
     return data.monthlyMetrics.reduce((acc, month) => ({
       revenue: acc.revenue + Number(month.revenue || 0),
       expenses: acc.expenses + Number(month.expenses || 0),
-      net: acc.revenue + Number(month.revenue || 0) - (acc.expenses + Number(month.expenses || 0))
+      net: (acc.revenue + Number(month.revenue || 0)) - (acc.expenses + Number(month.expenses || 0))
     }), { revenue: 0, expenses: 0, net: 0 });
   };
 
@@ -288,21 +300,21 @@ const Dashboard = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Revenue by Department - D3 Bar Chart */}
-        <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">
+        <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue by Department</h2>
-          <div ref={d3Container} className="w-full flex justify-center" />
+          <div ref={d3Container} className="w-full flex justify-center overflow-x-auto" />
         </div>
 
         {/* Revenue vs Expenses - Line Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 h-80">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue vs Expenses</h2>
           <Line data={monthlyData} options={chartOptions} />
         </div>
 
         {/* Expense Categories - Pie Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 h-80">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Expense Categories</h2>
           <Pie data={expenseData} options={pieOptions} />
         </div>
