@@ -24,7 +24,17 @@ const Transactions = () => {
   };
 
   const addNewTransaction = () => {
-    setSelectedTransaction(newTransaction);
+    const today = new Date().toISOString().split('T')[0];
+    setSelectedTransaction({
+      id: Date.now(),
+      type: 'expense', // Default to expense
+      date: today,
+      description: '',
+      category: '',
+      department: '',
+      credit: 0,
+      debit: 0
+    });
     setIsSlideoutOpen(true);
   };
 
@@ -99,7 +109,17 @@ const Transactions = () => {
   };
 
   const openSlideout = (transaction) => {
-    setSelectedTransaction(transaction);
+    // Determine transaction type based on credit/debit
+    const type = transaction.credit > 0 ? 'income' : 'expense';
+    
+    // Format the date to YYYY-MM-DD for the date input
+    const formattedDate = transaction.date ? new Date(transaction.date).toISOString().split('T')[0] : '';
+    
+    setSelectedTransaction({
+      ...transaction,
+      type,
+      date: formattedDate
+    });
     setIsSlideoutOpen(true);
   };
 
@@ -111,10 +131,21 @@ const Transactions = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setSelectedTransaction({
-      ...selectedTransaction,
-      [name]: value
-    });
+    
+    if (name === 'type') {
+      // When type changes, reset the credit/debit values
+      setSelectedTransaction({
+        ...selectedTransaction,
+        type: value,
+        credit: 0,
+        debit: 0
+      });
+    } else {
+      setSelectedTransaction({
+        ...selectedTransaction,
+        [name]: value
+      });
+    }
   };
 
   const validateForm = () => {

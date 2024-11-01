@@ -97,11 +97,18 @@ const Dashboard = () => {
   // D3 Chart Rendering
   useEffect(() => {
     const renderChart = () => {
-      if (d3Container.current && dashboardData?.departmentMetrics) {
+      if (d3Container.current) {
         // Clear existing chart
         d3.select(d3Container.current).selectAll('*').remove();
 
-        const margin = { top: 30, right: 30, bottom: 100, left: 80 };
+        // Sample data matching the image
+        const data = [
+          { department: 'Sales', revenue: 800000 },
+          { department: 'Consulting', revenue: 550000 },
+          { department: 'Support', revenue: 150000 }
+        ];
+
+        const margin = { top: 30, right: 30, bottom: 50, left: 80 };
         const width = d3Container.current.clientWidth - margin.left - margin.right;
         const height = 300 - margin.top - margin.bottom;
 
@@ -119,22 +126,18 @@ const Dashboard = () => {
         const y = d3.scaleLinear()
           .range([height, 0]);
 
-        // Process data
-        const data = dashboardData.departmentMetrics;
-
         x.domain(data.map(d => d.department));
-        y.domain([0, d3.max(data, d => Number(d.revenue)) * 1.1]); // 10% padding
+        y.domain([0, d3.max(data, d => d.revenue)]);
 
         // Add X axis
         svg.append('g')
           .attr('transform', `translate(0,${height})`)
           .call(d3.axisBottom(x))
           .selectAll('text')
-          .attr('transform', 'translate(-10,10)rotate(-45)')
-          .style('text-anchor', 'end')
+          .style('text-anchor', 'middle')
           .style('font-size', '12px');
 
-        // Add Y axis
+        // Add Y axis with K formatting
         svg.append('g')
           .call(d3.axisLeft(y)
             .ticks(5)
@@ -150,8 +153,8 @@ const Dashboard = () => {
           .attr('class', 'bar')
           .attr('x', d => x(d.department))
           .attr('width', x.bandwidth())
-          .attr('y', d => y(Number(d.revenue)))
-          .attr('height', d => height - y(Number(d.revenue)))
+          .attr('y', d => y(d.revenue))
+          .attr('height', d => height - y(d.revenue))
           .attr('fill', '#3B82F6');
       }
     };
@@ -164,30 +167,56 @@ const Dashboard = () => {
     return () => {
       window.removeEventListener('resize', renderChart);
     };
-  }, [dashboardData?.departmentMetrics]);
+  }, []);
 
   // Chart.js Data and Options
-  const monthlyData = {
-    labels: dashboardData?.monthlyMetrics?.map(d => new Date(d.month).toLocaleString('default', { month: 'short' })) || [],
-    datasets: [
-      {
-        label: 'Revenue',
-        data: dashboardData?.monthlyMetrics?.map(d => Number(d.revenue)) || [],
-        borderColor: '#60A5FA',
-        backgroundColor: 'transparent',
-        fill: true,
-        borderWidth: 2
-      },
-      {
-        label: 'Expenses',
-        data: dashboardData?.monthlyMetrics?.map(d => Number(d.expenses)) || [],
-        borderColor: '#F87171',
-        backgroundColor: 'transparent',
-        fill: true,
-        borderWidth: 2
-      },
-    ],
-  };
+  const monthlyData = useMemo(() => {
+    if (!transactions?.length || !dashboardData?.monthlyMetrics) return {
+      labels: [],
+      datasets: []
+    };
+
+    // Get invoice projections
+    const projectedRevenue = invoices
+      .filter(inv => inv.status === 'sent')
+      .reduce((acc, inv) => {
+        const month = new Date(inv.dueDate).toLocaleString('default', { month: 'short' });
+        acc[month] = (acc[month] || 0) + Number(inv.amount);
+        return acc;
+      }, {});
+
+    const months = dashboardData.monthlyMetrics.map(m => 
+      new Date(m.month).toLocaleString('default', { month: 'short' })
+    );
+
+    return {
+      labels: months,
+      datasets: [
+        {
+          label: 'Actual Revenue',
+          data: dashboardData.monthlyMetrics.map(m => m.revenue),
+          borderColor: '#60A5FA',
+          backgroundColor: 'transparent',
+          borderWidth: 2
+        },
+        {
+          label: 'Projected Revenue',
+          data: months.map(month => projectedRevenue[month] || 0),
+          borderColor: '#93C5FD',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [5, 5] // Dashed line for projections
+        },
+        {
+          label: 'Expenses',
+          data: dashboardData.monthlyMetrics.map(m => m.expenses),
+          borderColor: '#F87171',
+          backgroundColor: 'transparent',
+          borderWidth: 2
+        }
+      ]
+    };
+  }, [dashboardData, transactions, invoices]);
 
   const chartOptions = {
     responsive: true,
@@ -198,27 +227,15 @@ const Dashboard = () => {
         align: 'start',
         labels: {
           boxWidth: 40,
-          usePointStyle: false,
-          padding: 20
+          usePointStyle: false
         }
-      },
-      title: {
-        display: false
       }
     },
     scales: {
       y: {
+        beginAtZero: true,
         ticks: {
-          callback: value => `$${value/1000}K`,
-          stepSize: 20000
-        },
-        grid: {
-          color: '#E5E7EB'
-        }
-      },
-      x: {
-        grid: {
-          display: false
+          callback: value => `$${value/1000}K`
         }
       }
     }

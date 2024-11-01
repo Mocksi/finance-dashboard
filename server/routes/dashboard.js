@@ -37,16 +37,31 @@ router.get('/dashboard-data', auth, async (req, res) => {
       GROUP BY category
       ORDER BY total DESC`;
 
-    const [monthlyResult, departmentResult, categoryResult] = await Promise.all([
-      pool.query(monthlyMetricsQuery),
-      pool.query(departmentMetricsQuery),
-      pool.query(expenseCategoriesQuery)
-    ]);
+    // Add invoice projections query
+    const invoiceProjectionsQuery = `
+      SELECT 
+        DATE_TRUNC('month', due_date) as month,
+        SUM(CASE WHEN status = 'sent' THEN amount ELSE 0 END) as projected_revenue,
+        SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) as realized_revenue
+      FROM invoices
+      GROUP BY DATE_TRUNC('month', due_date)
+      ORDER BY month DESC
+      LIMIT 12
+    `;
+
+    const [monthlyResult, departmentResult, categoryResult, projectionsResult] = 
+      await Promise.all([
+        pool.query(monthlyMetricsQuery),
+        pool.query(departmentMetricsQuery),
+        pool.query(expenseCategoriesQuery),
+        pool.query(invoiceProjectionsQuery)
+      ]);
 
     res.json({
       monthlyMetrics: monthlyResult.rows,
       departmentMetrics: departmentResult.rows,
-      expenseCategories: categoryResult.rows
+      expenseCategories: categoryResult.rows,
+      invoiceProjections: projectionsResult.rows
     });
 
   } catch (error) {
