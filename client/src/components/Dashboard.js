@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -29,40 +30,69 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const d3Container = useRef(null);
 
-  // Fetch both dashboard and transactions data
   useEffect(() => {
     const fetchData = async () => {
       try {
         const credentials = localStorage.getItem('credentials');
+        
+        // Redirect to login if no credentials exist
+        if (!credentials) {
+          navigate('/login');
+          return;
+        }
+
         const headers = {
           'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/json'
         };
 
         // Fetch dashboard data
-        const dashboardResponse = await fetch('/api/dashboard-data', { headers });
-        const dashboardResult = await dashboardResponse.json();
-        setDashboardData(dashboardResult);
+        const dashboardResponse = await fetch('https://finance-dashboard-tfn6.onrender.com/api/dashboard-data', { 
+          headers 
+        });
 
         // Fetch transactions data
-        const transactionsResponse = await fetch('/api/transactions', { headers });
-        const transactionsResult = await transactionsResponse.json();
-        setTransactions(Array.isArray(transactionsResult.transactions) ? transactionsResult.transactions : []);
+        const transactionsResponse = await fetch('https://finance-dashboard-tfn6.onrender.com/api/transactions', { 
+          headers 
+        });
 
+        if (dashboardResponse.status === 401 || transactionsResponse.status === 401) {
+          localStorage.removeItem('credentials');
+          navigate('/login');
+          return;
+        }
+
+        if (!dashboardResponse.ok || !transactionsResponse.ok) {
+          throw new Error('Failed to fetch data');
+        }
+
+        const dashboardResult = await dashboardResponse.json();
+        const transactionsResult = await transactionsResponse.json();
+
+        setDashboardData(dashboardResult);
+        setTransactions(Array.isArray(transactionsResult.transactions) ? transactionsResult.transactions : []);
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
+        setError(error.message);
         setIsLoading(false);
+        
+        if (error.message.includes('401')) {
+          localStorage.removeItem('credentials');
+          navigate('/login');
+        }
       }
     };
 
     fetchData();
-  }, []);
+  }, [navigate]);
 
   // D3 Chart Rendering
   useEffect(() => {
