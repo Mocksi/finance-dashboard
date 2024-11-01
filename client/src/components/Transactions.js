@@ -15,25 +15,24 @@ const Transactions = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const credentials = localStorage.getItem('credentials');
         
-        // Redirect to login if no token exists
-        if (!token) {
+        // Redirect to login if no credentials exist
+        if (!credentials) {
           navigate('/login');
           return;
         }
 
         const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/transactions', {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Basic ${credentials}`,
             'Content-Type': 'application/json'
-          },
-          credentials: 'include' // Add this if using cookies
+          }
         });
 
         if (response.status === 401) {
-          // Token is invalid or expired
-          localStorage.removeItem('token'); // Clear invalid token
+          // Credentials are invalid
+          localStorage.removeItem('credentials');
           navigate('/login');
           return;
         }
@@ -52,7 +51,7 @@ const Transactions = () => {
         
         // If the error is auth-related, redirect to login
         if (error.message.includes('401')) {
-          localStorage.removeItem('token');
+          localStorage.removeItem('credentials');
           navigate('/login');
         }
       }

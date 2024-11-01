@@ -9,33 +9,21 @@ const Login = () => {
   });
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission
+  // Hardcoded credentials
+  const VALID_EMAIL = 'admin@example.com';
+  const VALID_PASSWORD = 'password123';
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
     
-    try {
-      const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(credentials)
-      });
-
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-
-      const data = await response.json();
-      
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        navigate('/dashboard');
-      } else {
-        setError('Invalid credentials');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError('Login failed. Please try again.');
+    // Check against hardcoded credentials
+    if (credentials.email === VALID_EMAIL && credentials.password === VALID_PASSWORD) {
+      // Store credentials in base64 format
+      const base64Credentials = btoa(`${credentials.email}:${credentials.password}`);
+      localStorage.setItem('credentials', base64Credentials);
+      navigate('/dashboard');
+    } else {
+      setError('Invalid credentials. Try admin@example.com / password123');
     }
   };
 
@@ -54,6 +42,9 @@ const Login = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Sign in to your account
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Use admin@example.com / password123
+          </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <input type="hidden" name="remember" value="true" />

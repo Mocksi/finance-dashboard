@@ -40,7 +40,8 @@ const Dashboard = () => {
       try {
         const credentials = localStorage.getItem('credentials');
         const headers = {
-          'Authorization': `Basic ${credentials}`
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json'
         };
 
         // Fetch dashboard data
