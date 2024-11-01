@@ -88,38 +88,33 @@ const Dashboard = () => {
   };
 
   // Pie Chart Data (Expense Categories)
-  const departmentData = {
-    labels: dashboardData?.expenseCategories?.map(d => d.category) || [],
-    datasets: [
-      {
-        data: dashboardData?.expenseCategories?.map(d => d.total) || [],
-        backgroundColor: [
-          '#4299E1', // blue
-          '#48BB78', // green
-          '#F6AD55', // orange
-          '#F56565', // red
-          '#9F7AEA', // purple
-          '#ED64A6', // pink
-          '#4FD1C5', // teal
-          '#667EEA'  // indigo
-        ],
-        borderColor: '#ffffff',
-        borderWidth: 2
-      }
-    ]
+  const expenseData = {
+    labels: dashboardData?.categoryExpenses?.map(d => d.category) || [],
+    datasets: [{
+      data: dashboardData?.categoryExpenses?.map(d => Number(d.total)) || [],
+      backgroundColor: [
+        '#4299E1', // blue
+        '#48BB78', // green
+        '#F6AD55', // orange
+        '#F56565', // red
+        '#9F7AEA', // purple
+        '#ED64A6', // pink
+      ],
+      borderColor: '#ffffff',
+      borderWidth: 2
+    }]
   };
 
   // D3 Bar Chart is handled in the useEffect
   useEffect(() => {
     if (d3Container.current && dashboardData?.departmentRevenue) {
-      // Clear any existing SVG
-      d3.select(d3Container.current).selectAll("*").remove();
+      // Clear existing chart
+      d3.select(d3Container.current).selectAll('*').remove();
 
-      const margin = { top: 20, right: 20, bottom: 40, left: 60 };
-      const width = d3Container.current.clientWidth - margin.left - margin.right;
-      const height = 300 - margin.top - margin.bottom;
+      const margin = { top: 30, right: 30, bottom: 70, left: 80 };
+      const width = 800 - margin.left - margin.right;
+      const height = 400 - margin.top - margin.bottom;
 
-      // Create SVG
       const svg = d3.select(d3Container.current)
         .append('svg')
         .attr('width', width + margin.left + margin.right)
@@ -127,18 +122,16 @@ const Dashboard = () => {
         .append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
 
-      // Process data
-      const data = dashboardData.departmentRevenue;
-
-      // Create scales
       const x = d3.scaleBand()
         .range([0, width])
-        .padding(0.1);
+        .padding(0.3);
 
       const y = d3.scaleLinear()
         .range([height, 0]);
 
-      // Set domains
+      // Process data
+      const data = dashboardData.departmentRevenue;
+
       x.domain(data.map(d => d.department));
       y.domain([0, d3.max(data, d => Number(d.revenue))]);
 
@@ -147,16 +140,14 @@ const Dashboard = () => {
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(x))
         .selectAll('text')
-        .style('text-anchor', 'end')
-        .attr('dx', '-.8em')
-        .attr('dy', '.15em')
-        .attr('transform', 'rotate(-45)');
+        .attr('transform', 'translate(-10,5)rotate(-45)')
+        .style('text-anchor', 'end');
 
       // Add Y axis
       svg.append('g')
         .call(d3.axisLeft(y)
           .ticks(5)
-          .tickFormat(d => `$${d3.format(',')(d)}`));
+          .tickFormat(d => `$${d3.format(',.0f')(d)}`));
 
       // Add bars
       svg.selectAll('.bar')
@@ -168,59 +159,7 @@ const Dashboard = () => {
         .attr('width', x.bandwidth())
         .attr('y', d => y(Number(d.revenue)))
         .attr('height', d => height - y(Number(d.revenue)))
-        .attr('fill', '#4299E1')
-        .on('mouseover', function(event, d) {
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr('fill', '#3182CE');
-
-          svg.append('text')
-            .attr('class', 'value-label')
-            .attr('x', x(d.department) + x.bandwidth() / 2)
-            .attr('y', y(Number(d.revenue)) - 5)
-            .attr('text-anchor', 'middle')
-            .text(`$${d3.format(',')(Number(d.revenue))}`);
-        })
-        .on('mouseout', function() {
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr('fill', '#4299E1');
-          
-          svg.selectAll('.value-label').remove();
-        });
-
-      // Add X axis label
-      svg.append('text')
-        .attr('transform', `translate(${width/2},${height + margin.top + 20})`)
-        .style('text-anchor', 'middle')
-        .text('Department');
-
-      // Add Y axis label
-      svg.append('text')
-        .attr('transform', 'rotate(-90)')
-        .attr('y', 0 - margin.left)
-        .attr('x', 0 - (height / 2))
-        .attr('dy', '1em')
-        .style('text-anchor', 'middle')
-        .text('Revenue ($)');
-
-      // Handle window resize
-      const handleResize = () => {
-        const newWidth = d3Container.current.clientWidth - margin.left - margin.right;
-        
-        svg.attr('width', newWidth + margin.left + margin.right);
-        
-        x.range([0, newWidth]);
-        
-        svg.selectAll('.bar')
-          .attr('x', d => x(d.department))
-          .attr('width', x.bandwidth());
-      };
-
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
+        .attr('fill', '#4299E1');
     }
   }, [dashboardData?.departmentRevenue]);
 
@@ -353,7 +292,7 @@ const Dashboard = () => {
         {/* Revenue by Department - D3 Bar Chart */}
         <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue by Department</h2>
-          <div ref={d3Container} className="w-full h-[300px]" />
+          <div ref={d3Container} className="w-full flex justify-center" />
         </div>
 
         {/* Revenue vs Expenses - Line Chart */}
@@ -365,7 +304,7 @@ const Dashboard = () => {
         {/* Expense Categories - Pie Chart */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Expense Categories</h2>
-          <Pie data={departmentData} options={pieOptions} />
+          <Pie data={expenseData} options={pieOptions} />
         </div>
       </div>
     </div>

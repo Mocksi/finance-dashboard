@@ -53,13 +53,13 @@ const Transactions = () => {
   };
 
   const handleTransactionClick = (transaction) => {
-    const type = transaction.debit ? 'expense' : 'income';
-    const amount = transaction.debit || transaction.credit || '';
+    const type = transaction.credit ? 'income' : 'expense';
+    const amount = Math.abs(transaction.credit || transaction.debit).toString();
     
     setSelectedTransaction({
       ...transaction,
       type,
-      amount: amount.toString()
+      amount
     });
     setIsSlideoutOpen(true);
   };
@@ -88,7 +88,7 @@ const Transactions = () => {
       return;
     }
 
-    const amount = parseFloat(selectedTransaction.amount);
+    const amount = Math.abs(parseFloat(selectedTransaction.amount));
     const transactionToSave = {
       ...selectedTransaction,
       credit: selectedTransaction.type === 'income' ? amount : null,
@@ -219,12 +219,12 @@ const Transactions = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                    ${transaction.debit 
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-green-100 text-green-800'
+                    ${transaction.credit 
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
                     }`}
                   >
-                    {transaction.debit ? 'Expense' : 'Income'}
+                    {transaction.credit ? 'Income' : 'Expense'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -236,11 +236,9 @@ const Transactions = () => {
                   {transaction.department}
                 </td>
                 <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${
-                  transaction.debit ? 'text-red-600' : 'text-green-600'
+                  transaction.credit ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  ${transaction.debit 
-                    ? Number(transaction.debit).toLocaleString()
-                    : Number(transaction.credit).toLocaleString()}
+                  ${Math.abs(transaction.credit || transaction.debit).toLocaleString()}
                 </td>
               </tr>
             ))}
