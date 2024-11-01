@@ -40,6 +40,7 @@ const Dashboard = () => {
 
       const dashboardResponse = await fetch('/api/dashboard-data', { headers });
       const dashboardResult = await dashboardResponse.json();
+      console.log('Dashboard API Response:', dashboardResult);
       setDashboardData(dashboardResult);
       setIsLoading(false);
     } catch (error) {
@@ -86,15 +87,21 @@ const Dashboard = () => {
     ]
   };
 
-  // Pie Chart Data (Department Revenue)
+  // Pie Chart Data (Expense Categories)
   const departmentData = {
-    labels: dashboardData?.departmentMetrics?.map(d => d.department) || [],
+    labels: dashboardData?.expenseCategories?.map(d => d.category) || [],
     datasets: [
       {
-        data: dashboardData?.departmentMetrics?.map(d => d.revenue) || [],
+        data: dashboardData?.expenseCategories?.map(d => d.total) || [],
         backgroundColor: [
-          '#4299E1', '#48BB78', '#F6AD55', '#F56565', 
-          '#9F7AEA', '#ED64A6', '#4FD1C5', '#667EEA'
+          '#4299E1', // blue
+          '#48BB78', // green
+          '#F6AD55', // orange
+          '#F56565', // red
+          '#9F7AEA', // purple
+          '#ED64A6', // pink
+          '#4FD1C5', // teal
+          '#667EEA'  // indigo
         ],
         borderColor: '#ffffff',
         borderWidth: 2
@@ -260,11 +267,22 @@ const Dashboard = () => {
     responsive: true,
     plugins: {
       legend: {
-        position: 'bottom'
+        position: 'bottom',
+        labels: {
+          padding: 20,
+          usePointStyle: true
+        }
       },
-      title: {
-        display: true,
-        text: 'Department Revenue'
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const label = context.label || '';
+            const value = context.raw;
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const percentage = ((value / total) * 100).toFixed(1);
+            return `${label}: $${value.toLocaleString()} (${percentage}%)`;
+          }
+        }
       }
     }
   };
@@ -332,22 +350,22 @@ const Dashboard = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue by Department - D3 Bar Chart */}
+        <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue by Department</h2>
+          <div ref={d3Container} className="w-full h-[300px]" />
+        </div>
+
         {/* Revenue vs Expenses - Line Chart */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue vs Expenses</h2>
           <Line data={monthlyData} options={chartOptions} />
         </div>
 
-        {/* Department Revenue - Pie Chart */}
+        {/* Expense Categories - Pie Chart */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Department Revenue</h2>
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Expense Categories</h2>
           <Pie data={departmentData} options={pieOptions} />
-        </div>
-
-        {/* Revenue by Department - D3 Bar Chart */}
-        <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue by Department</h2>
-          <div ref={d3Container} className="w-full h-[300px]" />
         </div>
       </div>
     </div>
