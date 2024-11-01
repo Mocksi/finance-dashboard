@@ -1,7 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Line, Pie } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
 import * as d3 from 'd3';
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -61,6 +82,37 @@ const Dashboard = () => {
     ]
   };
 
+  const chartOptions = {
+    responsive: true,
+    scales: {
+      x: {
+        type: 'category',
+        display: true,
+        title: {
+          display: true,
+          text: 'Month'
+        }
+      },
+      y: {
+        type: 'linear',
+        display: true,
+        title: {
+          display: true,
+          text: 'Amount ($)'
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        position: 'bottom'
+      },
+      title: {
+        display: true,
+        text: 'Monthly Revenue vs Expenses'
+      }
+    }
+  };
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">Financial Overview</h1>
@@ -114,14 +166,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue vs Expenses</h2>
-          <Line data={monthlyData} options={{
-            responsive: true,
-            plugins: {
-              legend: {
-                position: 'bottom'
-              }
-            }
-          }} />
+          <Line data={monthlyData} options={chartOptions} />
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
