@@ -1,12 +1,44 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Login = ({ onLogin, error }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onLogin(email, password);
+  };
+
+  const handleLogin = async (credentials) => {
+    try {
+      const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(credentials)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Make sure the token is being saved correctly
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        // Navigate to dashboard or transactions page
+        navigate('/dashboard');
+      } else {
+        throw new Error('No token received from server');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      // Handle login error
+    }
   };
 
   return (

@@ -28,29 +28,36 @@ ChartJS.register(
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
+  const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const d3Container = useRef(null);
 
-  // Fetch Dashboard Data
-  const fetchData = async () => {
-    try {
-      const credentials = localStorage.getItem('credentials');
-      const headers = {
-        'Authorization': `Basic ${credentials}`
-      };
-
-      const dashboardResponse = await fetch('/api/dashboard-data', { headers });
-      const dashboardResult = await dashboardResponse.json();
-      console.log('Dashboard API Response:', dashboardResult);
-      setDashboardData(dashboardResult);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setIsLoading(false);
-    }
-  };
-
+  // Fetch both dashboard and transactions data
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const credentials = localStorage.getItem('credentials');
+        const headers = {
+          'Authorization': `Basic ${credentials}`
+        };
+
+        // Fetch dashboard data
+        const dashboardResponse = await fetch('/api/dashboard-data', { headers });
+        const dashboardResult = await dashboardResponse.json();
+        setDashboardData(dashboardResult);
+
+        // Fetch transactions data
+        const transactionsResponse = await fetch('/api/transactions', { headers });
+        const transactionsResult = await transactionsResponse.json();
+        setTransactions(Array.isArray(transactionsResult.transactions) ? transactionsResult.transactions : []);
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setIsLoading(false);
+      }
+    };
+
     fetchData();
   }, []);
 
@@ -244,10 +251,15 @@ const Dashboard = () => {
 
   // Fix the data aggregation for department revenue
   const departmentRevenueData = useMemo(() => {
-    if (!transactions?.length) return null;
+    if (!transactions?.length) return {
+      labels: [],
+      datasets: [{
+        data: [],
+        backgroundColor: []
+      }]
+    };
     
     const aggregated = transactions.reduce((acc, transaction) => {
-      // Only include credit transactions (revenue)
       if (!transaction.credit || transaction.credit <= 0) return acc;
       
       const dept = transaction.department || 'Uncategorized';
@@ -269,10 +281,15 @@ const Dashboard = () => {
 
   // Fix the data aggregation for expense categories
   const expenseCategoriesData = useMemo(() => {
-    if (!transactions?.length) return null;
+    if (!transactions?.length) return {
+      labels: [],
+      datasets: [{
+        data: [],
+        backgroundColor: []
+      }]
+    };
     
     const aggregated = transactions.reduce((acc, transaction) => {
-      // Only include debit transactions (expenses)
       if (!transaction.debit || transaction.debit <= 0) return acc;
       
       const category = transaction.category || 'Uncategorized';
@@ -350,13 +367,16 @@ const Dashboard = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue by Department - D3 Bar Chart */}
+        {/* Revenue by Department */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue by Department</h2>
-          <div 
-            ref={d3Container} 
-            className="w-full h-80 flex justify-center overflow-x-auto" 
-          />
+          {departmentRevenueData.labels.length > 0 ? (
+            <Pie data={departmentRevenueData} options={pieOptions} />
+          ) : (
+            <div className="h-[300px] flex items-center justify-center">
+              <p className="text-gray-500">No revenue data available</p>
+            </div>
+          )}
         </div>
 
         {/* Revenue vs Expenses - Line Chart */}
@@ -367,16 +387,16 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Expense Categories - Pie Chart */}
-        <div className="bg-white rounded-lg shadow p-6 h-80 flex flex-col">
+        {/* Expense Categories */}
+        <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Expense Categories</h2>
-          <div className="flex-1">
-            {expenseData.labels.length > 0 && expenseData.datasets[0].data.length > 0 ? (
-              <Pie data={expenseData} options={pieOptions} />
-            ) : (
-              <div className="text-center text-gray-500">No data available for Expense Categories.</div>
-            )}
-          </div>
+          {expenseCategoriesData.labels.length > 0 ? (
+            <Pie data={expenseCategoriesData} options={pieOptions} />
+          ) : (
+            <div className="h-[300px] flex items-center justify-center">
+              <p className="text-gray-500">No expense data available</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Transactions = () => {
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -13,12 +15,28 @@ const Transactions = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const response = await fetch('/api/transactions', {
+        const token = localStorage.getItem('token');
+        
+        // Redirect to login if no token exists
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+
+        const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/transactions', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
-          }
+          },
+          credentials: 'include' // Add this if using cookies
         });
+
+        if (response.status === 401) {
+          // Token is invalid or expired
+          localStorage.removeItem('token'); // Clear invalid token
+          navigate('/login');
+          return;
+        }
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -31,11 +49,17 @@ const Transactions = () => {
         console.error('Error fetching transactions:', error);
         setError(error.message);
         setIsLoading(false);
+        
+        // If the error is auth-related, redirect to login
+        if (error.message.includes('401')) {
+          localStorage.removeItem('token');
+          navigate('/login');
+        }
       }
     };
 
     fetchTransactions();
-  }, []);
+  }, [navigate]);
 
   const requestSort = (key) => {
     let direction = 'asc';
