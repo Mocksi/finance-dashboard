@@ -69,6 +69,7 @@ const Dashboard = () => {
         }
 
         const data = await response.json();
+        console.log('Dashboard data:', data);
         setDashboardData(data);
         setIsLoading(false);
       } catch (error) {
@@ -221,8 +222,8 @@ const Dashboard = () => {
               <p className="text-sm font-medium text-gray-500">Total Revenue</p>
               <p className="text-2xl font-semibold text-gray-900">
                 ${(dashboardData.monthlyMetrics || [])
-                  .reduce((sum, m) => sum + (m.revenue || 0), 0)
-                  .toLocaleString()}
+                  .reduce((sum, m) => sum + (Number(m.revenue) || 0), 0)
+                  .toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>
             </div>
           </div>
@@ -237,8 +238,8 @@ const Dashboard = () => {
               <p className="text-sm font-medium text-gray-500">Total Expenses</p>
               <p className="text-2xl font-semibold text-gray-900">
                 ${(dashboardData.monthlyMetrics || [])
-                  .reduce((sum, m) => sum + (m.expenses || 0), 0)
-                  .toLocaleString()}
+                  .reduce((sum, m) => sum + (Number(m.expenses) || 0), 0)
+                  .toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>
             </div>
           </div>
@@ -253,8 +254,8 @@ const Dashboard = () => {
               <p className="text-sm font-medium text-gray-500">Net Income</p>
               <p className="text-2xl font-semibold text-gray-900">
                 ${(dashboardData.monthlyMetrics || [])
-                  .reduce((sum, m) => sum + ((m.revenue || 0) - (m.expenses || 0)), 0)
-                  .toLocaleString()}
+                  .reduce((sum, m) => sum + (Number(m.revenue || 0) - Number(m.expenses || 0)), 0)
+                  .toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>
             </div>
           </div>
