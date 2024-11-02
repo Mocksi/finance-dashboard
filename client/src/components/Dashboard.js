@@ -263,7 +263,7 @@ const Dashboard = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-3 gap-6 mb-8">
         {/* Revenue vs Expenses Line Chart */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Revenue vs Expenses</h2>
@@ -306,12 +306,12 @@ const Dashboard = () => {
               data={{
                 labels: dashboardData.expenseCategories.map(c => c.category),
                 datasets: [{
-                  data: dashboardData.expenseCategories.map(c => c.amount),
+                  data: dashboardData.expenseCategories.map(c => Number(c.amount)),
                   backgroundColor: [
                     '#EF4444', // Red
-                    '#3B82F6', // Blue
                     '#F59E0B', // Orange
-                    '#10B981'  // Green
+                    '#10B981', // Green
+                    '#3B82F6'  // Blue
                   ]
                 }]
               }}
