@@ -56,15 +56,27 @@ const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
       if (calculateTotal() <= 0) {
         throw new Error('Invoice total must be greater than 0');
       }
-      await onSave({
+      if (!formData.clientName) {
+        throw new Error('Client name is required');
+      }
+      if (!formData.dueDate) {
+        throw new Error('Due date is required');
+      }
+
+      // Ensure dueDate is in YYYY-MM-DD format
+      const formattedData = {
         ...formData,
+        dueDate: new Date(formData.dueDate).toISOString().split('T')[0],
         amount: calculateTotal()
-      });
+      };
+
+      console.log('Submitting invoice:', formattedData);
+      await onSave(formattedData);
       onClose();
     } catch (error) {
-      console.error('Error saving invoice:', error);
-      // You might want to add state for error handling
-      // setError(error.message);
+      console.error('Error in form submission:', error);
+      // Add error state and display to user
+      setError(error.message);
     }
   };
 
@@ -132,14 +144,35 @@ const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
                     </div>
 
                     {/* Items */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-4">Items</label>
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium text-gray-900">Items</h3>
+                      
+                      {/* Column Headers */}
+                      <div className="grid grid-cols-12 gap-4 mb-2">
+                        <div className="col-span-5">
+                          <label className="block text-sm font-medium text-gray-700">Description</label>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-medium text-gray-700">Quantity</label>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-medium text-gray-700">Rate ($)</label>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-medium text-gray-700">Amount ($)</label>
+                        </div>
+                        <div className="col-span-1">
+                          {/* Space for delete button */}
+                        </div>
+                      </div>
+
+                      {/* Line Items */}
                       {formData.items.map((item, index) => (
-                        <div key={index} className="grid grid-cols-12 gap-2 mb-4">
+                        <div key={index} className="grid grid-cols-12 gap-4 items-center">
                           <div className="col-span-5">
                             <input
                               type="text"
-                              placeholder="Description"
+                              placeholder="Item description"
                               value={item.description}
                               onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                               className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
@@ -176,7 +209,7 @@ const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
                               readOnly
                             />
                           </div>
-                          <div className="col-span-1">
+                          <div className="col-span-1 text-center">
                             {formData.items.length > 1 && (
                               <button
                                 type="button"
@@ -189,6 +222,8 @@ const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
                           </div>
                         </div>
                       ))}
+
+                      {/* Add Item Button */}
                       <button
                         type="button"
                         onClick={addItem}

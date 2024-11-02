@@ -73,9 +73,21 @@ const Invoices = () => {
   const handleSaveInvoice = async (formData) => {
     try {
       const credentials = localStorage.getItem('credentials');
-      const isNewInvoice = !formData.id;
+      const isNewInvoice = !formData.id || formData.id === Date.now();
       const url = `https://finance-dashboard-tfn6.onrender.com/api/invoices${isNewInvoice ? '' : `/${formData.id}`}`;
       
+      console.log('Saving invoice:', {
+        url,
+        method: isNewInvoice ? 'POST' : 'PUT',
+        data: {
+          clientName: formData.clientName,
+          amount: formData.items.reduce((sum, item) => sum + Number(item.amount), 0),
+          dueDate: formData.dueDate,
+          status: formData.status,
+          items: formData.items
+        }
+      });
+
       const response = await fetch(url, {
         method: isNewInvoice ? 'POST' : 'PUT',
         headers: {
@@ -92,7 +104,8 @@ const Invoices = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save invoice');
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.details || 'Failed to save invoice');
       }
 
       const savedInvoice = await response.json();
@@ -110,7 +123,7 @@ const Invoices = () => {
       setSelectedInvoice(null);
     } catch (error) {
       console.error('Error saving invoice:', error);
-      setError('Failed to save invoice');
+      setError(error.message);
     }
   };
 
