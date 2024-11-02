@@ -73,19 +73,30 @@ const Invoices = () => {
   const handleSaveInvoice = async (formData) => {
     try {
       const credentials = localStorage.getItem('credentials');
-      const isNewInvoice = !formData.id || formData.id === Date.now();
+      const isNewInvoice = !formData.id || typeof formData.id === 'number';
       const url = `https://finance-dashboard-tfn6.onrender.com/api/invoices${isNewInvoice ? '' : `/${formData.id}`}`;
       
+      const totalAmount = formData.items.reduce((sum, item) => 
+        sum + (Number(item.quantity) * Number(item.rate)), 0
+      );
+
+      const payload = {
+        clientName: formData.clientName,
+        amount: totalAmount,
+        dueDate: formData.dueDate,
+        status: formData.status || 'draft',
+        items: formData.items.map(item => ({
+          description: item.description,
+          quantity: Number(item.quantity),
+          rate: Number(item.rate),
+          amount: Number(item.quantity) * Number(item.rate)
+        }))
+      };
+
       console.log('Saving invoice:', {
         url,
         method: isNewInvoice ? 'POST' : 'PUT',
-        data: {
-          clientName: formData.clientName,
-          amount: formData.items.reduce((sum, item) => sum + Number(item.amount), 0),
-          dueDate: formData.dueDate,
-          status: formData.status,
-          items: formData.items
-        }
+        data: payload
       });
 
       const response = await fetch(url, {
@@ -94,13 +105,7 @@ const Invoices = () => {
           'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          clientName: formData.clientName,
-          amount: formData.items.reduce((sum, item) => sum + Number(item.amount), 0),
-          dueDate: formData.dueDate,
-          status: formData.status,
-          items: formData.items
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -124,6 +129,7 @@ const Invoices = () => {
     } catch (error) {
       console.error('Error saving invoice:', error);
       setError(error.message);
+      throw error;
     }
   };
 
@@ -200,58 +206,49 @@ const Invoices = () => {
         </div>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg">
+      <div className="bg-white shadow rounded-lg overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Invoice #
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Client
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Due Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Amount
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              {['Invoice #', 'Client', 'Due Date', 'Amount', 'Status', 'Actions'].map((header) => (
+                <th 
+                  key={header}
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  {header}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {invoices.map((invoice) => (
               <tr 
                 key={invoice.id}
-                className="hover:bg-gray-50 cursor-pointer"
+                className="border-t hover:bg-gray-50 cursor-pointer transition-colors duration-150"
                 onClick={() => {
                   setSelectedInvoice(invoice);
                   setIsSlideoutOpen(true);
                 }}
               >
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                   #{invoice.id}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                   {invoice.clientName}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                   {new Date(invoice.dueDate).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                   ${invoice.amount.toLocaleString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[invoice.status]}`}>
                     {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={e => e.stopPropagation()}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-right" onClick={e => e.stopPropagation()}>
                   {renderActionMenu(invoice)}
                 </td>
               </tr>

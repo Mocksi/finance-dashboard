@@ -77,36 +77,24 @@ router.get('/', auth, async (req, res) => {
 // POST /api/invoices
 router.post('/', auth, async (req, res) => {
   try {
-    const { clientName, amount, dueDate, items } = req.body;
+    const { clientName, amount, dueDate, status, items } = req.body;
 
     // Validate required fields
     if (!clientName) throw new Error('Client name is required');
     if (!dueDate) throw new Error('Due date is required');
-    if (!amount || amount <= 0) throw new Error('Valid amount is required');
     if (!Array.isArray(items)) throw new Error('Items must be an array');
-
-    console.log('Creating invoice:', {
-      clientName,
-      amount,
-      dueDate,
-      items
-    });
 
     const result = await pool.query(
       `INSERT INTO invoices 
         (client_name, amount, status, due_date, items)
-       VALUES ($1, $2, 'draft', $3, $4)
-       RETURNING id, client_name as "clientName", amount, status, 
-                 due_date as "dueDate", items, 
-                 created_at as "createdAt", updated_at as "updatedAt"`,
-      [clientName, amount, dueDate, JSON.stringify(items)]
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [clientName, amount, status || 'draft', dueDate, JSON.stringify(items)]
     );
-
-    console.log('Created invoice:', result.rows[0]);
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Server error creating invoice:', error);
+    console.error('Error creating invoice:', error);
     res.status(500).json({ 
       error: 'Failed to create invoice',
       details: error.message
