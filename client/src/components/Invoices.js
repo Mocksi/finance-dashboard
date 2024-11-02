@@ -191,64 +191,73 @@ const Invoices = () => {
 
   return (
     <div className="p-6">
-      <div className="sm:flex sm:items-center mb-6">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Invoices</h1>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button
-            onClick={addNewInvoice}
-            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Invoice
-          </button>
-        </div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Invoices</h1>
+        <button
+          onClick={addNewInvoice}
+          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          New Invoice
+        </button>
       </div>
 
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="bg-white shadow-sm rounded-lg">
         <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr>
-              {['Invoice #', 'Client', 'Due Date', 'Amount', 'Status', 'Actions'].map((header) => (
-                <th 
-                  key={header}
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              {[
+                { label: 'Invoice #', key: 'id' },
+                { label: 'Client', key: 'clientName' },
+                { label: 'Due Date', key: 'dueDate' },
+                { label: 'Amount', key: 'amount' },
+                { label: 'Status', key: 'status' },
+                { label: 'Actions', key: 'actions' }
+              ].map((header) => (
+                <th
+                  key={header.key}
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                  onClick={() => header.key !== 'actions' && requestSort(header.key)}
                 >
-                  {header}
+                  {header.label}
+                  {sortConfig?.key === header.key && (
+                    <span className="ml-1">
+                      {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {invoices.map((invoice) => (
-              <tr 
+              <tr
                 key={invoice.id}
-                className="border-t hover:bg-gray-50 cursor-pointer transition-colors duration-150"
                 onClick={() => {
                   setSelectedInvoice(invoice);
                   setIsSlideoutOpen(true);
                 }}
+                className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
               >
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  #{invoice.id}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  #{invoice.id.slice(0, 8)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {invoice.clientName}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {new Date(invoice.dueDate).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   ${invoice.amount.toLocaleString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[invoice.status]}`}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[invoice.status]}`}>
                     {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-right" onClick={e => e.stopPropagation()}>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={e => e.stopPropagation()}>
                   {renderActionMenu(invoice)}
                 </td>
               </tr>
@@ -257,7 +266,6 @@ const Invoices = () => {
         </table>
       </div>
 
-      {/* Add the slideout component */}
       {isSlideoutOpen && (
         <InvoiceSlideout
           invoice={selectedInvoice}
