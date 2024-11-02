@@ -15,12 +15,34 @@ router.get('/dashboard-data', auth, async (req, res) => {
       GROUP BY DATE_TRUNC('month', date)
       ORDER BY month ASC`;
 
-    const result = await pool.query(monthlyMetricsQuery);
+    const departmentMetricsQuery = `
+      SELECT 
+        department,
+        COALESCE(SUM(credit), 0) as revenue
+      FROM transactions
+      WHERE date >= NOW() - INTERVAL '12 months'
+      GROUP BY department
+      ORDER BY revenue DESC`;
+
+    const expenseCategoriesQuery = `
+      SELECT 
+        category,
+        COALESCE(SUM(debit), 0) as amount
+      FROM transactions
+      WHERE date >= NOW() - INTERVAL '12 months' AND debit > 0
+      GROUP BY category
+      ORDER BY amount DESC`;
+
+    const [monthlyResult, departmentResult, categoryResult] = await Promise.all([
+      pool.query(monthlyMetricsQuery),
+      pool.query(departmentMetricsQuery),
+      pool.query(expenseCategoriesQuery)
+    ]);
 
     res.json({
-      monthlyMetrics: result.rows,
-      departmentMetrics: [],
-      expenseCategories: [],
+      monthlyMetrics: monthlyResult.rows,
+      departmentMetrics: departmentResult.rows,
+      expenseCategories: categoryResult.rows,
       invoiceProjections: []
     });
   } catch (error) {
