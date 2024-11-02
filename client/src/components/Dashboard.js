@@ -123,6 +123,62 @@ const Dashboard = () => {
     };
   }, [dashboardData]);
 
+  // D3 Chart Rendering
+  useEffect(() => {
+    if (d3Container.current && dashboardData.departmentMetrics.length > 0) {
+      const margin = { top: 20, right: 30, bottom: 40, left: 60 };
+      const width = d3Container.current.clientWidth - margin.left - margin.right;
+      const height = d3Container.current.clientHeight - margin.top - margin.bottom;
+
+      // Clear existing chart
+      d3.select(d3Container.current).selectAll('*').remove();
+
+      const svg = d3.select(d3Container.current)
+        .append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+        .append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+
+      const x = d3.scaleBand()
+        .range([0, width])
+        .padding(0.1);
+
+      const y = d3.scaleLinear()
+        .range([height, 0]);
+
+      x.domain(dashboardData.departmentMetrics.map(d => d.department));
+      y.domain([0, d3.max(dashboardData.departmentMetrics, d => d.revenue)]);
+
+      // Add X axis
+      svg.append('g')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(x))
+        .selectAll('text')
+        .style('text-anchor', 'end')
+        .attr('dx', '-.8em')
+        .attr('dy', '.15em')
+        .attr('transform', 'rotate(-45)');
+
+      // Add Y axis
+      svg.append('g')
+        .call(d3.axisLeft(y)
+          .ticks(5)
+          .tickFormat(d => `$${d/1000}K`));
+
+      // Add bars
+      svg.selectAll('rect')
+        .data(dashboardData.departmentMetrics)
+        .enter()
+        .append('rect')
+        .attr('x', d => x(d.department))
+        .attr('width', x.bandwidth())
+        .attr('y', d => y(d.revenue))
+        .attr('height', d => height - y(d.revenue))
+        .attr('fill', '#3B82F6');
+    }
+  }, [dashboardData, d3Container]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -154,7 +210,123 @@ const Dashboard = () => {
     <div className="p-6 ml-64">
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">Financial Overview</h1>
       
-      {/* Rest of your dashboard JSX */}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-blue-100 rounded-full">
+              <DollarSign className="h-6 w-6 text-blue-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">Total Revenue</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                ${(dashboardData.monthlyMetrics || [])
+                  .reduce((sum, m) => sum + (m.revenue || 0), 0)
+                  .toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-red-100 rounded-full">
+              <TrendingDown className="h-6 w-6 text-red-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">Total Expenses</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                ${(dashboardData.monthlyMetrics || [])
+                  .reduce((sum, m) => sum + (m.expenses || 0), 0)
+                  .toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-green-100 rounded-full">
+              <TrendingUp className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">Net Income</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                ${(dashboardData.monthlyMetrics || [])
+                  .reduce((sum, m) => sum + ((m.revenue || 0) - (m.expenses || 0)), 0)
+                  .toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Revenue vs Expenses Line Chart */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Revenue vs Expenses</h2>
+          <div className="h-80">
+            <Line
+              data={monthlyData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                    align: 'end'
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback: value => `$${value/1000}K`
+                    }
+                  }
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Revenue by Department Bar Chart */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Department</h2>
+          <div className="h-80" ref={d3Container}></div>
+        </div>
+
+        {/* Expense Categories Pie Chart */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Expense Categories</h2>
+          <div className="h-80">
+            <Pie
+              data={{
+                labels: dashboardData.expenseCategories.map(c => c.category),
+                datasets: [{
+                  data: dashboardData.expenseCategories.map(c => c.amount),
+                  backgroundColor: [
+                    '#EF4444', // Red
+                    '#3B82F6', // Blue
+                    '#F59E0B', // Orange
+                    '#10B981'  // Green
+                  ]
+                }]
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'right'
+                  }
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
