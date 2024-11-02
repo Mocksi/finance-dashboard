@@ -83,7 +83,7 @@ router.post('/', auth, async (req, res) => {
       `INSERT INTO invoices 
         (client_name, amount, status, due_date, items)
        VALUES ($1, $2, 'draft', $3, $4)
-       RETURNING *`,
+       RETURNING id, client_name, amount, status, due_date, items, created_at, updated_at`,
       [clientName, amount, dueDate, JSON.stringify(items)]
     );
 

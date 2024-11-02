@@ -50,12 +50,22 @@ const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
     return formData.items.reduce((sum, item) => sum + Number(item.amount), 0);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave({
-      ...formData,
-      amount: calculateTotal()
-    });
+    try {
+      if (calculateTotal() <= 0) {
+        throw new Error('Invoice total must be greater than 0');
+      }
+      await onSave({
+        ...formData,
+        amount: calculateTotal()
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error saving invoice:', error);
+      // You might want to add state for error handling
+      // setError(error.message);
+    }
   };
 
   return (

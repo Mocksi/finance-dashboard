@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, X } from 'lucide-react';
+import InvoiceSlideout from './InvoiceSlideout';
 
 const Invoices = () => {
   const navigate = useNavigate();
@@ -215,7 +216,10 @@ const Invoices = () => {
               <tr 
                 key={invoice.id}
                 className="hover:bg-gray-50 cursor-pointer"
-                onClick={() => setSelectedInvoice(invoice)}
+                onClick={() => {
+                  setSelectedInvoice(invoice);
+                  setIsSlideoutOpen(true);
+                }}
               >
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   #{invoice.id}
@@ -234,10 +238,8 @@ const Invoices = () => {
                     {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button className="text-blue-600 hover:text-blue-900">
-                    View Details
-                  </button>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={e => e.stopPropagation()}>
+                  {renderActionMenu(invoice)}
                 </td>
               </tr>
             ))}
