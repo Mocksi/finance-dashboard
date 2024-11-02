@@ -3,21 +3,31 @@ import { X, Plus, Trash } from 'lucide-react';
 
 const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
   const [formData, setFormData] = useState({
-    id: null,
-    clientName: '',
-    dueDate: '',
-    status: 'draft',
-    items: [{ description: '', quantity: 1, rate: 0, amount: 0 }]
+    id: invoice?.id || Date.now(),
+    clientName: invoice?.clientName || '',
+    dueDate: invoice?.dueDate || new Date().toISOString().split('T')[0],
+    status: invoice?.status || 'draft',
+    items: invoice?.items?.length ? invoice.items : [{
+      description: '',
+      quantity: 1,
+      rate: 0,
+      amount: 0
+    }]
   });
 
   useEffect(() => {
     if (invoice) {
       setFormData({
         id: invoice.id,
-        clientName: invoice.clientName || '',
-        dueDate: invoice.dueDate || '',
-        status: invoice.status || 'draft',
-        items: invoice.items?.length > 0 ? invoice.items : [{ description: '', quantity: 1, rate: 0, amount: 0 }]
+        clientName: invoice.clientName,
+        dueDate: invoice.dueDate,
+        status: invoice.status,
+        items: invoice.items?.length ? invoice.items : [{
+          description: '',
+          quantity: 1,
+          rate: 0,
+          amount: 0
+        }]
       });
     }
   }, [invoice]);
