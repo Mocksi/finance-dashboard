@@ -3,6 +3,49 @@ const router = express.Router();
 const { pool } = require('../db');
 const auth = require('../middleware/auth');
 
+// Add workflow validation middleware
+const validateStatusTransition = (req, res, next) => {
+  const allowedTransitions = {
+    draft: ['sent', 'cancelled'],
+    sent: ['paid', 'overdue', 'cancelled'],
+    paid: ['refunded'],
+    overdue: ['paid', 'cancelled'],
+    cancelled: [],
+    refunded: []
+  };
+
+  const currentStatus = req.invoice.status;
+  const newStatus = req.body.status;
+
+  if (!allowedTransitions[currentStatus].includes(newStatus)) {
+    return res.status(400).json({
+      error: 'Invalid status transition',
+      message: `Cannot transition from ${currentStatus} to ${newStatus}`
+    });
+  }
+
+  next();
+};
+
+// Add invoice lookup middleware
+const lookupInvoice = async (req, res, next) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM invoices WHERE id = $1::uuid',
+      [req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    req.invoice = result.rows[0];
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
 // GET /api/invoices
 router.get('/', auth, async (req, res) => {
   try {
@@ -55,7 +98,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // PATCH /api/invoices/:id/status
-router.patch('/:id/status', auth, async (req, res) => {
+router.patch('/:id/status', auth, lookupInvoice, validateStatusTransition, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -69,17 +112,23 @@ router.patch('/:id/status', auth, async (req, res) => {
       [status, id]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Invoice not found' });
+    // Send notification based on status change
+    switch (status) {
+      case 'sent':
+        // TODO: Send email to client
+        break;
+      case 'paid':
+        // TODO: Update accounting system
+        break;
+      case 'overdue':
+        // TODO: Send reminder email
+        break;
     }
 
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating invoice status:', error);
-    res.status(500).json({ 
-      error: 'Failed to update invoice status',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
-    });
+    res.status(500).json({ error: 'Failed to update invoice status' });
   }
 });
 
