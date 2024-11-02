@@ -136,6 +136,10 @@ app.get('/api/dashboard-data', authenticateUser, async (req, res) => {
 
 app.use('/api/transactions', transactionsRouter);
 
+// Update the dashboard route
+app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/invoices', require('./routes/invoices'));
+
 // Serve React app - this should be after all API routes
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/build/index.html'));

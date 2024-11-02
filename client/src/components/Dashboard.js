@@ -31,7 +31,12 @@ ChartJS.register(
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardData, setDashboardData] = useState({
+    monthlyMetrics: [],
+    departmentRevenue: [],
+    categoryExpenses: [],
+    kpis: {}
+  });
   const [transactions, setTransactions] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,21 +58,33 @@ const Dashboard = () => {
           'Content-Type': 'application/json'
         };
 
-        const [dashboardResponse, invoicesResponse] = await Promise.all([
-          fetch('https://finance-dashboard-tfn6.onrender.com/api/dashboard-data', { headers }),
-          fetch('https://finance-dashboard-tfn6.onrender.com/api/invoices', { headers })
-        ]);
+        // First, try to fetch dashboard data
+        const dashboardResponse = await fetch('https://finance-dashboard-tfn6.onrender.com/api/dashboard', {
+          headers
+        });
 
-        if (dashboardResponse.status === 401 || invoicesResponse.status === 401) {
+        if (dashboardResponse.status === 401) {
           localStorage.removeItem('credentials');
           navigate('/login');
           return;
         }
 
-        const [dashboardResult, invoicesResult] = await Promise.all([
-          dashboardResponse.json(),
-          invoicesResponse.json()
-        ]);
+        if (!dashboardResponse.ok) {
+          throw new Error(`Dashboard API error: ${dashboardResponse.status}`);
+        }
+
+        const dashboardResult = await dashboardResponse.json();
+
+        // Then, try to fetch invoices
+        const invoicesResponse = await fetch('https://finance-dashboard-tfn6.onrender.com/api/invoices', {
+          headers
+        });
+
+        if (!invoicesResponse.ok) {
+          throw new Error(`Invoices API error: ${invoicesResponse.status}`);
+        }
+
+        const invoicesResult = await invoicesResponse.json();
 
         setDashboardData(dashboardResult);
         setTransactions(dashboardResult.transactions || []);
@@ -160,17 +177,43 @@ const Dashboard = () => {
 
   // Chart.js Data and Options
   const monthlyData = useMemo(() => {
-    if (!dashboardData?.monthlyMetrics) return {
-      labels: [],
-      datasets: []
-    };
+    if (!dashboardData?.monthlyMetrics?.length) {
+      return {
+        labels: [],
+        datasets: [
+          {
+            label: 'Actual Revenue',
+            data: [],
+            borderColor: '#60A5FA',
+            backgroundColor: 'transparent',
+            borderWidth: 2
+          },
+          {
+            label: 'Projected Revenue',
+            data: [],
+            borderColor: '#93C5FD',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [5, 5]
+          },
+          {
+            label: 'Expenses',
+            data: [],
+            borderColor: '#F87171',
+            backgroundColor: 'transparent',
+            borderWidth: 2
+          }
+        ]
+      };
+    }
 
-    // Get invoice projections
-    const projectedRevenue = invoices
-      .filter(inv => inv.status === 'sent')
+    // Get invoice projections with null checks
+    const projectedRevenue = (invoices || [])
+      .filter(inv => inv?.status === 'sent')
       .reduce((acc, inv) => {
+        if (!inv?.due_date) return acc;
         const month = new Date(inv.due_date).toLocaleString('default', { month: 'short' });
-        acc[month] = (acc[month] || 0) + Number(inv.amount);
+        acc[month] = (acc[month] || 0) + Number(inv.amount || 0);
         return acc;
       }, {});
 
@@ -183,7 +226,7 @@ const Dashboard = () => {
       datasets: [
         {
           label: 'Actual Revenue',
-          data: dashboardData.monthlyMetrics.map(m => m.revenue),
+          data: dashboardData.monthlyMetrics.map(m => m.revenue || 0),
           borderColor: '#60A5FA',
           backgroundColor: 'transparent',
           borderWidth: 2
@@ -198,7 +241,7 @@ const Dashboard = () => {
         },
         {
           label: 'Expenses',
-          data: dashboardData.monthlyMetrics.map(m => m.expenses),
+          data: dashboardData.monthlyMetrics.map(m => m.expenses || 0),
           borderColor: '#F87171',
           backgroundColor: 'transparent',
           borderWidth: 2
@@ -330,6 +373,14 @@ const Dashboard = () => {
 
   if (isLoading) {
     return <div className="text-center mt-10">Loading Dashboard...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-center text-red-600">
+        Error loading dashboard: {error}
+      </div>
+    );
   }
 
   return (
