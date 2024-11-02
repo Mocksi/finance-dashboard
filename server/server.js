@@ -6,6 +6,7 @@ const cors = require('cors');
 const { Pool } = require('pg');
 const path = require('path');
 const transactionsRouter = require('./routes/transactions');
+const dashboardRouter = require('./routes/dashboard');
 
 const app = express();
 
@@ -136,13 +137,22 @@ app.get('/api/dashboard-data', authenticateUser, async (req, res) => {
 
 app.use('/api/transactions', transactionsRouter);
 
-// Update the dashboard route
-app.use('/api/dashboard', require('./routes/dashboard'));
+// Mount the dashboard router at /api/dashboard
+app.use('/api/dashboard', dashboardRouter);
 app.use('/api/invoices', require('./routes/invoices'));
 
 // Serve React app - this should be after all API routes
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/build/index.html'));
+});
+
+// Add a catch-all route handler for debugging
+app.use('*', (req, res) => {
+  console.log('404 - Route not found:', req.originalUrl);
+  res.status(404).json({
+    error: 'Route not found',
+    requestedUrl: req.originalUrl
+  });
 });
 
 const PORT = process.env.PORT || 5000;

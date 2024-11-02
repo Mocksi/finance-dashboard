@@ -33,189 +33,62 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState({
     monthlyMetrics: [],
-    departmentRevenue: [],
-    categoryExpenses: [],
-    kpis: {}
+    departmentMetrics: [],
+    expenseCategories: [],
+    invoiceProjections: []
   });
-  const [transactions, setTransactions] = useState([]);
-  const [invoices, setInvoices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const d3Container = useRef(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDashboardData = async () => {
       try {
         const credentials = localStorage.getItem('credentials');
-        
         if (!credentials) {
           navigate('/login');
           return;
         }
 
-        const headers = {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json'
-        };
-
-        // First, try to fetch dashboard data
-        const dashboardResponse = await fetch('https://finance-dashboard-tfn6.onrender.com/api/dashboard', {
-          headers
+        // Update the endpoint URL
+        const response = await fetch('/api/dashboard/dashboard-data', {
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/json'
+          }
         });
 
-        if (dashboardResponse.status === 401) {
+        if (response.status === 401) {
           localStorage.removeItem('credentials');
           navigate('/login');
           return;
         }
 
-        if (!dashboardResponse.ok) {
-          throw new Error(`Dashboard API error: ${dashboardResponse.status}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const dashboardResult = await dashboardResponse.json();
-
-        // Then, try to fetch invoices
-        const invoicesResponse = await fetch('https://finance-dashboard-tfn6.onrender.com/api/invoices', {
-          headers
-        });
-
-        if (!invoicesResponse.ok) {
-          throw new Error(`Invoices API error: ${invoicesResponse.status}`);
-        }
-
-        const invoicesResult = await invoicesResponse.json();
-
-        setDashboardData(dashboardResult);
-        setTransactions(dashboardResult.transactions || []);
-        setInvoices(invoicesResult.invoices || []);
+        const data = await response.json();
+        setDashboardData(data);
         setIsLoading(false);
       } catch (error) {
-        console.error('Error fetching data:', error);
-        setError(error.message);
+        console.error('Error fetching dashboard data:', error);
+        setError('Failed to load dashboard data. Please try again later.');
         setIsLoading(false);
       }
     };
 
-    fetchData();
+    fetchDashboardData();
   }, [navigate]);
 
-  // D3 Chart Rendering
-  useEffect(() => {
-    const renderChart = () => {
-      if (d3Container.current) {
-        // Clear existing chart
-        d3.select(d3Container.current).selectAll('*').remove();
-
-        // Sample data matching the image
-        const data = [
-          { department: 'Sales', revenue: 800000 },
-          { department: 'Consulting', revenue: 550000 },
-          { department: 'Support', revenue: 150000 }
-        ];
-
-        const margin = { top: 30, right: 30, bottom: 50, left: 80 };
-        const width = d3Container.current.clientWidth - margin.left - margin.right;
-        const height = 300 - margin.top - margin.bottom;
-
-        const svg = d3.select(d3Container.current)
-          .append('svg')
-          .attr('width', width + margin.left + margin.right)
-          .attr('height', height + margin.top + margin.bottom)
-          .append('g')
-          .attr('transform', `translate(${margin.left},${margin.top})`);
-
-        const x = d3.scaleBand()
-          .range([0, width])
-          .padding(0.3);
-
-        const y = d3.scaleLinear()
-          .range([height, 0]);
-
-        x.domain(data.map(d => d.department));
-        y.domain([0, d3.max(data, d => d.revenue)]);
-
-        // Add X axis
-        svg.append('g')
-          .attr('transform', `translate(0,${height})`)
-          .call(d3.axisBottom(x))
-          .selectAll('text')
-          .style('text-anchor', 'middle')
-          .style('font-size', '12px');
-
-        // Add Y axis with K formatting
-        svg.append('g')
-          .call(d3.axisLeft(y)
-            .ticks(5)
-            .tickFormat(d => `$${d/1000}K`))
-          .selectAll('text')
-          .style('font-size', '12px');
-
-        // Add bars
-        svg.selectAll('.bar')
-          .data(data)
-          .enter()
-          .append('rect')
-          .attr('class', 'bar')
-          .attr('x', d => x(d.department))
-          .attr('width', x.bandwidth())
-          .attr('y', d => y(d.revenue))
-          .attr('height', d => height - y(d.revenue))
-          .attr('fill', '#3B82F6');
-      }
-    };
-
-    renderChart();
-
-    // Add resize listener
-    window.addEventListener('resize', renderChart);
-
-    return () => {
-      window.removeEventListener('resize', renderChart);
-    };
-  }, []);
-
-  // Chart.js Data and Options
+  // Update the monthlyData calculation
   const monthlyData = useMemo(() => {
     if (!dashboardData?.monthlyMetrics?.length) {
       return {
         labels: [],
-        datasets: [
-          {
-            label: 'Actual Revenue',
-            data: [],
-            borderColor: '#60A5FA',
-            backgroundColor: 'transparent',
-            borderWidth: 2
-          },
-          {
-            label: 'Projected Revenue',
-            data: [],
-            borderColor: '#93C5FD',
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            borderDash: [5, 5]
-          },
-          {
-            label: 'Expenses',
-            data: [],
-            borderColor: '#F87171',
-            backgroundColor: 'transparent',
-            borderWidth: 2
-          }
-        ]
+        datasets: []
       };
     }
-
-    // Get invoice projections with null checks
-    const projectedRevenue = (invoices || [])
-      .filter(inv => inv?.status === 'sent')
-      .reduce((acc, inv) => {
-        if (!inv?.due_date) return acc;
-        const month = new Date(inv.due_date).toLocaleString('default', { month: 'short' });
-        acc[month] = (acc[month] || 0) + Number(inv.amount || 0);
-        return acc;
-      }, {});
 
     const months = dashboardData.monthlyMetrics.map(m => 
       new Date(m.month).toLocaleString('default', { month: 'short' })
@@ -225,7 +98,7 @@ const Dashboard = () => {
       labels: months,
       datasets: [
         {
-          label: 'Actual Revenue',
+          label: 'Revenue',
           data: dashboardData.monthlyMetrics.map(m => m.revenue || 0),
           borderColor: '#60A5FA',
           backgroundColor: 'transparent',
@@ -233,7 +106,7 @@ const Dashboard = () => {
         },
         {
           label: 'Projected Revenue',
-          data: months.map(month => projectedRevenue[month] || 0),
+          data: dashboardData.invoiceProjections?.map(p => p.projected_revenue || 0) || [],
           borderColor: '#93C5FD',
           backgroundColor: 'transparent',
           borderWidth: 2,
@@ -248,137 +121,31 @@ const Dashboard = () => {
         }
       ]
     };
-  }, [dashboardData, invoices]);
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top',
-        align: 'start',
-        labels: {
-          boxWidth: 40,
-          usePointStyle: false
-        }
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: value => `$${value/1000}K`
-        }
-      }
-    }
-  };
-
-  const expenseData = {
-    labels: dashboardData?.expenseCategories?.map(d => d.category) || [],
-    datasets: [{
-      data: dashboardData?.expenseCategories?.map(d => Number(d.total)) || [],
-      backgroundColor: [
-        '#4299E1',
-        '#48BB78',
-        '#F6AD55',
-        '#F56565',
-        '#9F7AEA',
-        '#ED64A6',
-      ],
-      borderColor: '#ffffff',
-      borderWidth: 2
-    }]
-  };
-
-  const pieOptions = {
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: {
-      legend: {
-        position: 'right',
-        align: 'center',
-        labels: {
-          padding: 15,
-          usePointStyle: false,
-          boxWidth: 15
-        }
-      },
-      title: {
-        display: false
-      }
-    }
-  };
-
-  // Fix the data aggregation for department revenue
-  const departmentRevenueData = useMemo(() => {
-    if (!transactions?.length) return {
-      labels: [],
-      datasets: [{
-        data: [],
-        backgroundColor: []
-      }]
-    };
-    
-    const aggregated = transactions.reduce((acc, transaction) => {
-      if (!transaction.credit || transaction.credit <= 0) return acc;
-      
-      const dept = transaction.department || 'Uncategorized';
-      acc[dept] = (acc[dept] || 0) + parseFloat(transaction.credit);
-      return acc;
-    }, {});
-
-    return {
-      labels: Object.keys(aggregated),
-      datasets: [{
-        data: Object.values(aggregated),
-        backgroundColor: [
-          '#4F46E5', '#7C3AED', '#EC4899', '#F59E0B', '#10B981',
-          '#6366F1', '#8B5CF6', '#F472B6', '#FBBF24', '#34D399'
-        ]
-      }]
-    };
-  }, [transactions]);
-
-  // Fix the data aggregation for expense categories
-  const expenseCategoriesData = useMemo(() => {
-    if (!transactions?.length) return {
-      labels: [],
-      datasets: [{
-        data: [],
-        backgroundColor: []
-      }]
-    };
-    
-    const aggregated = transactions.reduce((acc, transaction) => {
-      if (!transaction.debit || transaction.debit <= 0) return acc;
-      
-      const category = transaction.category || 'Uncategorized';
-      acc[category] = (acc[category] || 0) + parseFloat(transaction.debit);
-      return acc;
-    }, {});
-
-    return {
-      labels: Object.keys(aggregated),
-      datasets: [{
-        data: Object.values(aggregated),
-        backgroundColor: [
-          '#EF4444', // Marketing (red)
-          '#3B82F6', // Operations (blue)
-          '#F59E0B', // Facilities (orange)
-          '#10B981'  // Training (green)
-        ]
-      }]
-    };
-  }, [transactions]);
+  }, [dashboardData]);
 
   if (isLoading) {
-    return <div className="text-center mt-10">Loading Dashboard...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="p-6 text-center text-red-600">
-        Error loading dashboard: {error}
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center text-red-600">
+          <p>{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -387,84 +154,7 @@ const Dashboard = () => {
     <div className="p-6 ml-64">
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">Financial Overview</h1>
       
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Revenue</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                ${dashboardData.monthlyMetrics.reduce((acc, curr) => acc + Number(curr.revenue), 0).toLocaleString()}
-              </p>
-            </div>
-            <div className="bg-green-100 p-3 rounded-full">
-              <TrendingUp className="text-green-600" size={24} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Expenses</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                ${dashboardData.monthlyMetrics.reduce((acc, curr) => acc + Number(curr.expenses), 0).toLocaleString()}
-              </p>
-            </div>
-            <div className="bg-red-100 p-3 rounded-full">
-              <TrendingDown className="text-red-600" size={24} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Net Income</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                ${(
-                  dashboardData.monthlyMetrics.reduce((acc, curr) => acc + Number(curr.revenue), 0) -
-                  dashboardData.monthlyMetrics.reduce((acc, curr) => acc + Number(curr.expenses), 0)
-                ).toLocaleString()}
-              </p>
-            </div>
-            <div className="bg-blue-100 p-3 rounded-full">
-              <DollarSign className="text-blue-600" size={24} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue by Department - D3 Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue by Department</h2>
-          <div ref={d3Container} className="h-[300px]"></div>
-        </div>
-
-        {/* Revenue vs Expenses - Line Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue vs Expenses</h2>
-          <div className="h-[300px] relative">
-            <Line data={monthlyData} options={chartOptions} />
-          </div>
-        </div>
-
-        {/* Expense Categories - Pie Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Expense Categories</h2>
-          <div className="h-[300px] relative">
-            {expenseCategoriesData.labels.length > 0 ? (
-              <Pie data={expenseCategoriesData} options={pieOptions} />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-gray-500">No expense data available</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Rest of your dashboard JSX */}
     </div>
   );
 };
