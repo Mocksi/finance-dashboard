@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, X } from 'lucide-react';
 import InvoiceSlideout from './InvoiceSlideout';
@@ -10,6 +10,7 @@ const Invoices = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isSlideoutOpen, setIsSlideoutOpen] = useState(false);
   const [error, setError] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: 'dueDate', direction: 'desc' });
 
   const statusColors = {
     draft: 'bg-gray-100 text-gray-800',
@@ -181,6 +182,40 @@ const Invoices = () => {
     </div>
   );
 
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedInvoices = useMemo(() => {
+    const sorted = [...invoices];
+    if (sortConfig.key) {
+      sorted.sort((a, b) => {
+        if (sortConfig.key === 'amount') {
+          return sortConfig.direction === 'asc' 
+            ? a.amount - b.amount 
+            : b.amount - a.amount;
+        }
+        if (sortConfig.key === 'dueDate') {
+          return sortConfig.direction === 'asc'
+            ? new Date(a.dueDate) - new Date(b.dueDate)
+            : new Date(b.dueDate) - new Date(a.dueDate);
+        }
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sorted;
+  }, [invoices, sortConfig]);
+
   if (isLoading) {
     return <div className="p-6 text-center">Loading invoices...</div>;
   }
@@ -231,7 +266,7 @@ const Invoices = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {invoices.map((invoice) => (
+            {sortedInvoices.map((invoice) => (
               <tr
                 key={invoice.id}
                 onClick={() => {
