@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { UserContext } from '../contexts/UserContext';
 import { Save } from 'lucide-react';
 
@@ -6,18 +6,40 @@ const Settings = () => {
   const { user, fetchUserProfile } = useContext(UserContext);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  
+  // Initialize forms with empty values
   const [companyForm, setCompanyForm] = useState({
-    name: user?.company_name || '',
-    domain: user?.company_domain || '',
-    logo_url: user?.company_logo || ''
+    name: '',
+    domain: '',
+    logo_url: ''
   });
+  
   const [userForm, setUserForm] = useState({
-    first_name: user?.first_name || '',
-    last_name: user?.last_name || '',
-    email: user?.email || '',
-    role: user?.role || '',
-    avatar_url: user?.avatar_url || ''
+    first_name: '',
+    last_name: '',
+    email: '',
+    role: '',
+    avatar_url: ''
   });
+
+  // Update form values when user data is loaded
+  useEffect(() => {
+    if (user) {
+      setCompanyForm({
+        name: user.company_name || '',
+        domain: user.company_domain || '',
+        logo_url: user.company_logo || ''
+      });
+
+      setUserForm({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+        role: user.role || '',
+        avatar_url: user.avatar_url || ''
+      });
+    }
+  }, [user]);
 
   const handleCompanySubmit = async (e) => {
     e.preventDefault();
@@ -49,18 +71,19 @@ const Settings = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      const { email, ...updateData } = userForm; // Exclude email from the update
       const response = await fetch('/api/account/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Basic ${localStorage.getItem('credentials')}`
         },
-        body: JSON.stringify(userForm)
+        body: JSON.stringify(updateData)
       });
 
       if (response.ok) {
         setMessage({ type: 'success', text: 'Profile updated successfully' });
-        fetchUserProfile(); // Refresh user data
+        fetchUserProfile();
       } else {
         throw new Error('Failed to update profile');
       }
@@ -159,9 +182,12 @@ const Settings = () => {
               <input
                 type="email"
                 value={userForm.email}
-                onChange={(e) => setUserForm({...userForm, email: e.target.value})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                readOnly
+                className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 cursor-not-allowed"
               />
+              <p className="mt-1 text-sm text-gray-500">
+                Email address cannot be changed as it is used for authentication
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Role</label>
