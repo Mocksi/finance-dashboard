@@ -6,8 +6,8 @@ import CompanyRoutes from './components/CompanyRoutes';
 
 function App() {
   return (
-    <UserProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <UserProvider>
         <Routes>
           {/* Base routes */}
           <Route path="/" element={<Navigate to="/login" />} />
@@ -19,8 +19,8 @@ function App() {
           {/* Catch all other routes */}
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
-      </BrowserRouter>
-    </UserProvider>
+      </UserProvider>
+    </BrowserRouter>
   );
 }
 
