@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
@@ -19,11 +19,21 @@ const Login = () => {
     if (credentials.email === VALID_EMAIL && credentials.password === VALID_PASSWORD) {
       const base64Credentials = btoa(`${credentials.email}:${credentials.password}`);
       localStorage.setItem('credentials', base64Credentials);
+      
+      // Redirect to the company domain dashboard
       navigate('/techflow.io');
     } else {
       setError('Invalid credentials. Try admin@company.com / testpass123');
     }
   };
+
+  // Redirect to login if already authenticated
+  useEffect(() => {
+    const credentials = localStorage.getItem('credentials');
+    if (credentials) {
+      navigate('/techflow.io');
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
