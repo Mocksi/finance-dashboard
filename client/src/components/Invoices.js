@@ -15,6 +15,7 @@ const Invoices = () => {
   const [error, setError] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'dueDate', direction: 'desc' });
   const [paymentModal, setPaymentModal] = useState({ open: false, invoiceId: null, paymentDetails: null });
+  const [statusHistory, setStatusHistory] = useState([]);
 
   const statusColors = {
     draft: 'bg-gray-100 text-gray-800',
@@ -132,27 +133,65 @@ const Invoices = () => {
         return;
       }
 
-      const response = await fetch(`https://finance-dashboard-tfn6.onrender.com/api/invoices/${invoiceId}/status`, {
+      // First, try to get the allowed transitions
+      const response = await fetch(`https://finance-dashboard-tfn6.onrender.com/api/invoices/${invoiceId}/allowed-transitions`, {
+        headers: { 'Authorization': authHeader }
+      });
+      const { currentStatus, allowedTransitions } = await response.json();
+
+      let override = false;
+      let overrideReason = '';
+
+      if (!allowedTransitions.includes(newStatus)) {
+        const confirmed = window.confirm(
+          `Warning: Transitioning from '${currentStatus}' to '${newStatus}' is not typically allowed.\n\n` +
+          `Allowed transitions from '${currentStatus}' are: ${allowedTransitions.join(', ')}\n\n` +
+          `As an admin, would you like to override this restriction?`
+        );
+
+        if (!confirmed) return;
+
+        override = true;
+        overrideReason = prompt('Please provide a reason for this override:');
+        if (!overrideReason) return;
+      }
+
+      const statusResponse = await fetch(`https://finance-dashboard-tfn6.onrender.com/api/invoices/${invoiceId}/status`, {
         method: 'PATCH',
         headers: {
           'Authorization': authHeader,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ 
+          status: newStatus,
+          override,
+          overrideReason
+        })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update status');
+      if (!statusResponse.ok) {
+        const errorData = await statusResponse.json();
+        throw new Error(errorData.message || 'Failed to update status');
       }
 
+      const updatedInvoice = await statusResponse.json();
+      
       setInvoices(prev =>
         prev.map(inv =>
           inv.id === invoiceId ? { ...inv, status: newStatus } : inv
         )
       );
+
+      // Fetch updated history
+      const historyResponse = await fetch(`https://finance-dashboard-tfn6.onrender.com/api/invoices/${invoiceId}/history`, {
+        headers: { 'Authorization': authHeader }
+      });
+      const history = await historyResponse.json();
+      setStatusHistory(history);
+
     } catch (error) {
       console.error('Error updating status:', error);
-      setError('Failed to update invoice status');
+      setError(error.message || 'Failed to update invoice status');
     }
   };
 
@@ -210,6 +249,40 @@ const Invoices = () => {
     }
     return sorted;
   }, [invoices, sortConfig]);
+
+  // Add new function to fetch full invoice details
+  const fetchInvoiceDetails = async (id) => {
+    try {
+      const authHeader = localStorage.getItem('authHeader');
+      if (!authHeader) {
+        navigate('/login', { replace: true });
+        return;
+      }
+
+      const response = await fetch(`https://finance-dashboard-tfn6.onrender.com/api/invoices/${id}`, {
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch invoice details');
+      }
+
+      const data = await response.json();
+      return {
+        ...data,
+        clientName: data.client_name,
+        dueDate: data.due_date,
+        items: Array.isArray(data.items) ? data.items : JSON.parse(data.items || '[]')
+      };
+    } catch (error) {
+      console.error('Error fetching invoice details:', error);
+      setError('Failed to load invoice details');
+      return null;
+    }
+  };
 
   if (isLoading) {
     return (
@@ -288,17 +361,12 @@ const Invoices = () => {
             {sortedInvoices.map((invoice) => (
               <tr
                 key={invoice.id}
-                onClick={() => {
-                  const formattedInvoice = {
-                    ...invoice,
-                    items: Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || '[]'),
-                    clientName: invoice.client_name || invoice.clientName,
-                    dueDate: invoice.due_date || invoice.dueDate,
-                    status: invoice.status || 'draft',
-                    amount: Number(invoice.amount) || 0
-                  };
-                  setSelectedInvoice(formattedInvoice);
-                  setIsSlideoutOpen(true);
+                onClick={async () => {
+                  const details = await fetchInvoiceDetails(invoice.id);
+                  if (details) {
+                    setSelectedInvoice(details);
+                    setIsSlideoutOpen(true);
+                  }
                 }}
                 className="border-t hover:bg-gray-50 cursor-pointer transition-colors duration-150"
               >

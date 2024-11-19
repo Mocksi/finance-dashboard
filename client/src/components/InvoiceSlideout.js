@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash } from 'lucide-react';
 
 const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
-    id: invoice?.id || Date.now(),
-    clientName: invoice?.clientName || '',
-    dueDate: invoice?.dueDate || new Date().toISOString().split('T')[0],
-    status: invoice?.status || 'draft',
-    items: invoice?.items?.length ? invoice.items : [{
+    id: '',
+    clientName: '',
+    dueDate: new Date().toISOString().split('T')[0],
+    status: 'draft',
+    items: [{
       description: '',
       quantity: 1,
       rate: 0,
@@ -29,8 +30,31 @@ const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
           amount: 0
         }]
       });
+      setIsLoading(false);
     }
   }, [invoice]);
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 overflow-hidden z-50">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          <div className="fixed inset-y-0 right-0 pl-10 max-w-full flex">
+            <div className="relative w-screen max-w-md">
+              <div className="h-full flex flex-col bg-white shadow-xl">
+                <div className="flex-1 flex justify-center items-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600">Loading invoice details...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...formData.items];

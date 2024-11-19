@@ -232,4 +232,26 @@ router.get('/:id/history', auth, async (req, res) => {
   }
 });
 
+// Add new endpoint to get full invoice details
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `SELECT id, client_name, amount, status, due_date, items, created_at, updated_at
+       FROM invoices 
+       WHERE id = $1::uuid`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching invoice:', error);
+    res.status(500).json({ error: 'Failed to fetch invoice' });
+  }
+});
+
 module.exports = router; 
