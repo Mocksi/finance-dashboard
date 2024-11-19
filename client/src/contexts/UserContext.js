@@ -20,7 +20,6 @@ export const UserProvider = ({ children }) => {
         }
 
         try {
-            console.log('Fetching profile with auth:', authHeader);
             const response = await fetch(`${API_BASE_URL}/account/profile`, {
                 method: 'GET',
                 headers: {
@@ -29,8 +28,6 @@ export const UserProvider = ({ children }) => {
                     'Accept': 'application/json'
                 }
             });
-
-            console.log('Response status:', response.status);
 
             if (response.status === 401) {
                 localStorage.removeItem('authHeader');
@@ -43,7 +40,6 @@ export const UserProvider = ({ children }) => {
             }
 
             const data = await response.json();
-            console.log('Profile data:', data);
             
             if (!data || !data.email) {
                 throw new Error('Invalid profile data received');
@@ -74,12 +70,23 @@ export const UserProvider = ({ children }) => {
         }
     };
 
+    // Only run once on mount
     useEffect(() => {
-        const authHeader = localStorage.getItem('authHeader');
-        if (authHeader && !user) {
-            fetchUserProfile();
-        }
-    }, []);
+        const initializeAuth = async () => {
+            const authHeader = localStorage.getItem('authHeader');
+            if (authHeader) {
+                try {
+                    await fetchUserProfile();
+                } catch (error) {
+                    console.error('Initial auth check failed:', error);
+                }
+            } else {
+                setLoading(false);
+            }
+        };
+        
+        initializeAuth();
+    }, []); // Empty dependency array
 
     return (
         <UserContext.Provider value={{ user, loading, fetchUserProfile }}>

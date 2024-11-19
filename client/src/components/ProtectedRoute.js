@@ -7,10 +7,11 @@ const ProtectedRoute = ({ children }) => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!loading && !user) {
+        const authHeader = localStorage.getItem('authHeader');
+        if (!loading && !user && !authHeader) {
             navigate('/login');
         }
-    }, [user, loading, navigate]);
+    }, [loading, user, navigate]);
 
     if (loading) {
         return <div>Loading...</div>;

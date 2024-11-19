@@ -4,7 +4,7 @@ import { UserContext } from '../contexts/UserContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { fetchUserProfile } = useContext(UserContext);
+  const { user, fetchUserProfile } = useContext(UserContext);
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
@@ -35,23 +35,12 @@ const Login = () => {
     }
   };
 
-  // Check if already logged in
+  // Redirect if already logged in
   useEffect(() => {
-    const checkAuth = async () => {
-      const savedCredentials = localStorage.getItem('authHeader');
-      if (savedCredentials) {
-        try {
-          await fetchUserProfile();
-          navigate('/techflow.io');
-        } catch (error) {
-          console.error('Auth check error:', error);
-          localStorage.removeItem('authHeader');
-        }
-      }
-    };
-    
-    checkAuth();
-  }, [navigate, fetchUserProfile]);
+    if (user) {
+      navigate('/techflow.io');
+    }
+  }, [user, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
