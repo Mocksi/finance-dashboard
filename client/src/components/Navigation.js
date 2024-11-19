@@ -46,14 +46,21 @@ const Navigation = ({ onLogout }) => {
         {user?.company_logo ? (
           <img 
             src={user.company_logo} 
-            alt={user.company_name}
-            className="h-8 w-auto"
+            alt={user.company_name || 'Company Logo'}
+            className="h-8 w-auto max-w-[200px] object-contain"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.style.display = 'none';
+              e.target.nextElementSibling.style.display = 'block';
+            }}
           />
-        ) : (
-          <h1 className="text-xl font-bold">
-            {user?.company_name || 'Financy'}
-          </h1>
-        )}
+        ) : null}
+        <h1 
+          className="text-xl font-bold"
+          style={{ display: user?.company_logo ? 'none' : 'block' }}
+        >
+          {user?.company_name || 'Financy'}
+        </h1>
       </div>
 
       <nav className="flex-1 p-4">

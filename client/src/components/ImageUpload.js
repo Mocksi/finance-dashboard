@@ -3,18 +3,33 @@ import { Upload, X } from 'lucide-react';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MIN_DIMENSIONS = { width: 200, height: 200 };
-const MAX_DIMENSIONS = { width: 2048, height: 2048 };
+
+// Different configurations for company logo and profile photo
+const IMAGE_CONFIGS = {
+  'company-logo': {
+    min: { width: 150, height: 32 },  // Minimum size for logo
+    max: { width: 300, height: 64 },  // Maximum size for logo
+    idealText: "Ideal dimensions: 150x32px to 300x64px (landscape orientation)"
+  },
+  'profile-photo': {
+    min: { width: 128, height: 128 },  // Minimum size for profile photo
+    max: { width: 512, height: 512 },  // Maximum size for profile photo
+    idealText: "Ideal dimensions: 128x128px to 512x512px (square format)"
+  }
+};
 
 const ImageUpload = ({ 
   currentImageUrl, 
   onImageSelected, 
   label, 
+  type = 'profile-photo', // or 'company-logo'
   className = "" 
 }) => {
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(currentImageUrl);
   const [uploading, setUploading] = useState(false);
+
+  const config = IMAGE_CONFIGS[type];
 
   const validateImage = (file) => {
     return new Promise((resolve, reject) => {
@@ -33,12 +48,12 @@ const ImageUpload = ({
 
       img.onload = () => {
         URL.revokeObjectURL(img.src);
-        if (img.width < MIN_DIMENSIONS.width || img.height < MIN_DIMENSIONS.height) {
-          reject(`Image must be at least ${MIN_DIMENSIONS.width}x${MIN_DIMENSIONS.height}px`);
+        if (img.width < config.min.width || img.height < config.min.height) {
+          reject(`Image must be at least ${config.min.width}x${config.min.height}px`);
           return;
         }
-        if (img.width > MAX_DIMENSIONS.width || img.height > MAX_DIMENSIONS.height) {
-          reject(`Image must be no larger than ${MAX_DIMENSIONS.width}x${MAX_DIMENSIONS.height}px`);
+        if (img.width > config.max.width || img.height > config.max.height) {
+          reject(`Image must be no larger than ${config.max.width}x${config.max.height}px`);
           return;
         }
         resolve(file);
@@ -139,7 +154,7 @@ const ImageUpload = ({
       )}
       
       <p className="mt-2 text-xs text-gray-500">
-        JPEG, PNG, or WebP. 200x200px to 2048x2048px. Max 5MB.
+        JPEG, PNG, or WebP. {config.idealText}. Max 5MB.
       </p>
     </div>
   );

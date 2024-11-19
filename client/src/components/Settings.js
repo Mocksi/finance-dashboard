@@ -146,6 +146,7 @@ const Settings = () => {
               currentImageUrl={companyForm.logo_url}
               onImageSelected={(url) => setCompanyForm({...companyForm, logo_url: url})}
               label="Company Logo"
+              type="company-logo"
             />
             <button
               type="submit"
@@ -214,6 +215,7 @@ const Settings = () => {
               currentImageUrl={userForm.avatar_url}
               onImageSelected={(url) => setUserForm({...userForm, avatar_url: url})}
               label="Profile Photo"
+              type="profile-photo"
             />
             <button
               type="submit"
