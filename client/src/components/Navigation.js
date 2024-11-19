@@ -29,15 +29,16 @@ const Navigation = ({ onLogout }) => {
   const navigate = useNavigate();
   
   const navItems = [
-    { id: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { id: '/transactions', label: 'Transactions', icon: Receipt },
-    { id: '/invoices', label: 'Invoices', icon: FileText },
-    { id: '/reports', label: 'Reports', icon: BarChart3 },
+    { id: '', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'transactions', label: 'Transactions', icon: Receipt },
+    { id: 'invoices', label: 'Invoices', icon: FileText },
+    { id: 'reports', label: 'Reports', icon: BarChart3 },
   ];
 
-  // Update document title to always use "Financy"
+  // Update document title
   React.useEffect(() => {
-    const currentPage = navItems.find(item => item.id === location.pathname)?.label || '';
+    const pathname = location.pathname.split('/').pop();
+    const currentPage = navItems.find(item => item.id === pathname)?.label || 'Settings';
     document.title = `Financy - ${currentPage}`;
   }, [location]);
 
@@ -51,21 +52,20 @@ const Navigation = ({ onLogout }) => {
               alt="Company Logo"
               className="h-8 w-auto max-w-[200px] object-contain"
               onError={(e) => {
+                e.target.onerror = null;
                 e.target.style.display = 'none';
-                // Find the fallback element and show it
-                const fallback = e.target.parentElement.querySelector('.fallback-text');
+                const parent = e.target.parentElement;
+                const fallback = parent.querySelector('.fallback-text');
                 if (fallback) {
                   fallback.style.display = 'block';
                 }
               }}
             />
-          ) : null}
-          <h1 
-            className="text-xl font-bold fallback-text"
-            style={{ display: user?.company_logo ? 'none' : 'block' }}
-          >
-            Financy
-          </h1>
+          ) : (
+            <h1 className="text-xl font-bold fallback-text">
+              Financy
+            </h1>
+          )}
         </div>
       </div>
 
@@ -74,7 +74,7 @@ const Navigation = ({ onLogout }) => {
           {navItems.map(item => (
             <li key={item.id}>
               <NavLink
-                to={`/${domain}${item.id}`}
+                to={`/${domain}/${item.id}`}
                 className={({ isActive }) =>
                   `flex items-center px-4 py-2 text-sm rounded-md hover:bg-gray-700 ${
                     isActive ? 'bg-gray-700 text-white' : 'text-gray-300'

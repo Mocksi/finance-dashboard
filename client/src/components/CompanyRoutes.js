@@ -32,7 +32,18 @@ const CompanyRoutes = () => {
       />
       
       <Route
-        path="/transactions"
+        path="settings"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Settings />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="transactions"
         element={
           <ProtectedRoute>
             <Layout>
@@ -43,7 +54,7 @@ const CompanyRoutes = () => {
       />
       
       <Route
-        path="/invoices"
+        path="invoices"
         element={
           <ProtectedRoute>
             <Layout>
@@ -54,7 +65,7 @@ const CompanyRoutes = () => {
       />
       
       <Route
-        path="/reports"
+        path="reports"
         element={
           <ProtectedRoute>
             <Layout>
@@ -63,18 +74,8 @@ const CompanyRoutes = () => {
           </ProtectedRoute>
         }
       />
-      
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Settings />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
 
+      {/* Catch-all redirect to dashboard */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
