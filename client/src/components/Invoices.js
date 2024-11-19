@@ -107,19 +107,19 @@ const Invoices = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save invoice');
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.details || 'Failed to save invoice');
       }
 
       const savedInvoice = await response.json();
-      setInvoices(prev => isNewInvoice ? 
-        [...prev, savedInvoice] : 
-        prev.map(inv => inv.id === savedInvoice.id ? savedInvoice : inv)
-      );
+      setInvoices(prev => isNewInvoice ? [...prev, savedInvoice] : prev.map(inv => 
+        inv.id === savedInvoice.id ? savedInvoice : inv
+      ));
       setIsSlideoutOpen(false);
       setSelectedInvoice(null);
     } catch (error) {
       console.error('Error saving invoice:', error);
-      setError('Failed to save invoice');
+      setError(error.message);
     }
   };
 

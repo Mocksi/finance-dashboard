@@ -178,21 +178,13 @@ const Transactions = () => {
         body: JSON.stringify(payload)
       });
 
-      if (response.status === 401) {
-        localStorage.removeItem('authHeader');
-        navigate('/login', { replace: true });
-        return;
-      }
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || errorData.details || 'Failed to save transaction');
       }
 
       const updatedTransaction = await response.json();
-      setTransactions(transactions.map(tx => 
-        tx.id === updatedTransaction.id ? updatedTransaction : tx
-      ));
+      setTransactions(prev => [...prev, updatedTransaction]);
       closeSlideout();
     } catch (error) {
       console.error('Error saving transaction:', error);
