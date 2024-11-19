@@ -1,12 +1,11 @@
 import React, { useContext } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
 import { 
   LayoutDashboard, 
   Receipt, 
   FileText, 
-  BarChart3, 
-  Settings,
+  BarChart3,
   LogOut 
 } from 'lucide-react';
 
@@ -26,13 +25,13 @@ const getInitialsColor = (name) => {
 const Navigation = ({ onLogout }) => {
   const { user } = useContext(UserContext);
   const location = useLocation();
+  const navigate = useNavigate();
   
   const navItems = [
     { id: '/', label: 'Dashboard', icon: LayoutDashboard },
     { id: '/transactions', label: 'Transactions', icon: Receipt },
     { id: '/invoices', label: 'Invoices', icon: FileText },
     { id: '/reports', label: 'Reports', icon: BarChart3 },
-    { id: '/settings', label: 'Settings', icon: Settings },
   ];
 
   // Update document title
@@ -56,33 +55,32 @@ const Navigation = ({ onLogout }) => {
           </h1>
         )}
       </div>
-      
-      <nav className="flex-1 p-4 overflow-y-auto">
-        <ul className="space-y-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <li key={item.id}>
-                <NavLink
-                  to={item.id}
-                  className={({ isActive }) => `
-                    w-full flex items-center px-4 py-2 rounded-md transition-colors
-                    ${isActive 
-                      ? 'bg-blue-600 text-white' 
-                      : 'text-gray-300 hover:bg-gray-700'}
-                  `}
-                >
-                  <Icon size={20} className="mr-3" />
-                  {item.label}
-                </NavLink>
-              </li>
-            );
-          })}
+
+      <nav className="flex-1 p-4">
+        <ul className="space-y-1">
+          {navItems.map(item => (
+            <li key={item.id}>
+              <NavLink
+                to={item.id}
+                className={({ isActive }) =>
+                  `flex items-center px-4 py-2 text-sm rounded-md hover:bg-gray-700 ${
+                    isActive ? 'bg-gray-700 text-white' : 'text-gray-300'
+                  }`
+                }
+              >
+                <item.icon className="h-5 w-5 mr-3" />
+                {item.label}
+              </NavLink>
+            </li>
+          ))}
         </ul>
       </nav>
 
       <div className="p-4 border-t border-gray-700">
-        <div className="mb-4 flex items-center">
+        <div 
+          onClick={() => navigate('/settings')}
+          className="mb-4 flex items-center cursor-pointer hover:bg-gray-700 p-2 rounded-md transition-colors"
+        >
           <div className="flex-shrink-0">
             {user?.avatar_url ? (
               <img
