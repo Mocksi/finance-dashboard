@@ -130,8 +130,7 @@ router.put('/profile', auth, async (req, res) => {
         first_name = $1,
         last_name = $2,
         role = $3,
-        avatar_url = $4,
-        updated_at = CURRENT_TIMESTAMP
+        avatar_url = $4
       WHERE email = $5
       RETURNING 
         id,
@@ -172,9 +171,7 @@ router.put('/profile', auth, async (req, res) => {
       company_logo: companyResult.rows[0]?.logo_url
     };
 
-    // Log the response for debugging
     console.log('Profile update successful:', userData);
-
     res.json(userData);
   } catch (error) {
     console.error('Error updating profile:', error);
