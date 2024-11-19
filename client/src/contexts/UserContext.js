@@ -20,43 +20,34 @@ export const UserProvider = ({ children }) => {
         }
 
         try {
-            console.log('Fetching profile with credentials:', credentials);
-            
-            const response = await fetch(`${API_BASE_URL}/users/profile`, {
+            const response = await fetch(`${API_BASE_URL}/account/profile`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Basic ${credentials}`,
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
+                    'Accept': 'application/json',
+                    'Origin': window.location.origin
+                },
+                credentials: 'include'
             });
 
-            console.log('Profile response status:', response.status);
-
-            const responseText = await response.text();
-            console.log('Raw response:', responseText);
-
-            if (response.status === 401) {
-                localStorage.removeItem('credentials');
-                setUser(null);
-                navigate('/login');
-                return;
-            }
-
             if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('credentials');
+                    setUser(null);
+                    navigate('/login');
+                    return;
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            let data;
-            try {
-                data = JSON.parse(responseText);
-            } catch (e) {
-                console.error('Failed to parse JSON:', e);
-                throw new Error('Invalid JSON response from server');
-            }
-
+            const data = await response.json();
             console.log('Profile data:', data);
             
+            if (!data || !data.email) {
+                throw new Error('Invalid profile data received');
+            }
+
             const userData = {
                 id: data.user_id,
                 email: data.email,

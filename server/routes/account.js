@@ -6,6 +6,9 @@ const auth = require('../middleware/auth');
 // Get profile data
 router.get('/profile', auth, async (req, res) => {
     try {
+        // Log the request for debugging
+        console.log('Profile request received:', req.user);
+
         const result = await pool.query(`
             SELECT 
                 u.id as user_id,
@@ -27,10 +30,13 @@ router.get('/profile', auth, async (req, res) => {
             return res.status(404).json({ error: 'Profile not found' });
         }
 
+        // Log the response for debugging
+        console.log('Sending profile data:', result.rows[0]);
+
         res.json(result.rows[0]);
     } catch (error) {
-        console.error('Error fetching profile:', error);
-        res.status(500).json({ error: 'Failed to fetch profile' });
+        console.error('Error in profile route:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
