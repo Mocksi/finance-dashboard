@@ -16,18 +16,36 @@ export const UserProvider = ({ children }) => {
                 return;
             }
 
+            console.log('Fetching profile...');
+
             const response = await fetch('/api/account/profile', {
                 headers: {
-                    'Authorization': `Basic ${credentials}`
+                    'Authorization': `Basic ${credentials}`,
+                    'Accept': 'application/json'
                 }
             });
 
+            console.log('Response status:', response.status);
+
             if (response.ok) {
-                const data = await response.json();
-                setUser(data);
+                const text = await response.text();
+                console.log('Response text:', text);
+                
+                try {
+                    const data = JSON.parse(text);
+                    console.log('Parsed data:', data);
+                    setUser(data);
+                } catch (parseError) {
+                    console.error('Error parsing JSON:', parseError);
+                    throw new Error('Invalid JSON response');
+                }
             } else if (response.status === 401) {
                 localStorage.removeItem('credentials');
                 navigate('/login');
+            } else {
+                const text = await response.text();
+                console.error('Error response:', text);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
         } catch (error) {
             console.error('Error fetching user profile:', error);
@@ -38,7 +56,7 @@ export const UserProvider = ({ children }) => {
 
     useEffect(() => {
         fetchUserProfile();
-    }, []);
+    }, [navigate]);
 
     return (
         <UserContext.Provider value={{ user, setUser, loading, fetchUserProfile }}>

@@ -95,6 +95,16 @@ const Settings = () => {
     }
   };
 
+  if (!user) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="text-center">
+          <p className="text-gray-500">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-8">

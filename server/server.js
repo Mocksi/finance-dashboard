@@ -8,6 +8,7 @@ const path = require('path');
 const transactionsRouter = require('./routes/transactions');
 const dashboardRouter = require('./routes/dashboard');
 const uploadRouter = require('./routes/upload');
+const accountRouter = require('./routes/account');
 
 const app = express();
 
@@ -147,6 +148,9 @@ app.use('/uploads', express.static('uploads'));
 
 // Use upload router
 app.use('/api/upload', uploadRouter);
+
+// Register the account routes
+app.use('/api/account', accountRouter);
 
 // Serve React app - this should be after all API routes
 app.get('*', (req, res) => {
