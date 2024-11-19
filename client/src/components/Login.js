@@ -10,7 +10,7 @@ const Login = () => {
   const [error, setError] = useState('');
 
   // Updated hardcoded credentials
-  const VALID_EMAIL = 'admin@company.com';
+  const VALID_EMAIL = 'sarah.chen@techflow.io';
   const VALID_PASSWORD = 'testpass123';
 
   const handleSubmit = async (e) => {
@@ -23,7 +23,7 @@ const Login = () => {
       // Redirect to the company domain dashboard
       navigate('/techflow.io');
     } else {
-      setError('Invalid credentials. Try admin@company.com / testpass123');
+      setError('Invalid credentials. Try sarah.chen@techflow.io / testpass123');
     }
   };
 
@@ -51,7 +51,7 @@ const Login = () => {
             Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Use admin@company.com / testpass123
+            Use sarah.chen@techflow.io / testpass123
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

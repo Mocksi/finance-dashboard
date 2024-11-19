@@ -23,6 +23,9 @@ const Settings = () => {
     avatar_url: ''
   });
 
+  // Add new state for team members
+  const [teamMembers, setTeamMembers] = useState([]);
+  
   // Update form values when user data is loaded
   useEffect(() => {
     if (user) {
@@ -41,6 +44,27 @@ const Settings = () => {
       });
     }
   }, [user]);
+
+  // Add fetch for team members
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      try {
+        const response = await fetch('/api/account/team', {
+          headers: {
+            'Authorization': `Basic ${localStorage.getItem('credentials')}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setTeamMembers(data);
+        }
+      } catch (error) {
+        console.error('Error fetching team members:', error);
+      }
+    };
+
+    fetchTeamMembers();
+  }, []);
 
   const handleCompanySubmit = async (e) => {
     e.preventDefault();
@@ -227,6 +251,39 @@ const Settings = () => {
                 Save Personal Settings
               </button>
             </form>
+          </div>
+        </div>
+
+        {/* Team Members Section */}
+        <div className="bg-white shadow rounded-lg mt-6">
+          <div className="p-4 sm:p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Team Members</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {teamMembers.map((member) => (
+                    <tr key={member.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {member.first_name} {member.last_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {member.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {member.role}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

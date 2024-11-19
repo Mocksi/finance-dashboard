@@ -34,4 +34,21 @@ router.get('/profile', auth, async (req, res) => {
     }
 });
 
+// Get team members
+router.get('/team', auth, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT tm.* 
+            FROM team_members tm
+            JOIN users u ON u.company_id = tm.company_id
+            WHERE u.email = $1
+        `, [req.user.email]);
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching team members:', error);
+        res.status(500).json({ error: 'Failed to fetch team members' });
+    }
+});
+
 module.exports = router; 
