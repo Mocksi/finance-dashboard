@@ -65,8 +65,8 @@ const Invoices = () => {
         const data = await response.json();
         const formattedInvoices = data.invoices.map(invoice => ({
           id: invoice.id,
-          clientName: invoice.client_name || invoice.clientName,
-          dueDate: invoice.due_date || invoice.dueDate,
+          clientName: invoice.client_name,
+          dueDate: invoice.due_date,
           amount: invoice.amount || 0,
           status: invoice.status || 'draft',
           items: invoice.items || []
@@ -274,7 +274,7 @@ const Invoices = () => {
       return {
         ...data,
         clientName: data.client_name,
-        dueDate: data.due_date,
+        dueDate: data.due_date || '',
         items: Array.isArray(data.items) ? data.items : JSON.parse(data.items || '[]')
       };
     } catch (error) {
