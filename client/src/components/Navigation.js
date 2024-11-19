@@ -10,6 +10,19 @@ import {
   LogOut 
 } from 'lucide-react';
 
+const getInitialsColor = (name) => {
+  const colors = [
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-yellow-500',
+    'bg-red-500',
+    'bg-purple-500',
+    'bg-pink-500'
+  ];
+  const index = name.length % colors.length;
+  return colors[index];
+};
+
 const Navigation = ({ onLogout }) => {
   const { user } = useContext(UserContext);
   const location = useLocation();
@@ -75,20 +88,34 @@ const Navigation = ({ onLogout }) => {
               <img
                 src={user.avatar_url}
                 alt=""
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.style.display = 'none';
+                  e.target.nextElementSibling.style.display = 'flex';
+                }}
               />
-            ) : (
-              <div className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center">
-                {user?.first_name?.[0]}
-              </div>
-            )}
+            ) : null}
+            <div 
+              className={`h-8 w-8 rounded-full flex items-center justify-center text-white font-medium ${
+                user?.first_name ? getInitialsColor(user.first_name) : 'bg-gray-600'
+              }`}
+              style={{ display: user?.avatar_url ? 'none' : 'flex' }}
+            >
+              {user?.first_name?.[0]?.toUpperCase() || '?'}
+            </div>
           </div>
-          <div className="ml-3">
-            <p className="text-sm font-medium text-white">
-              {user?.first_name} {user?.last_name}
+          <div className="ml-3 overflow-hidden">
+            <p className="text-sm font-medium text-white truncate">
+              {user?.first_name && user?.last_name 
+                ? `${user.first_name} ${user.last_name}`
+                : 'User Name'}
             </p>
-            <p className="text-xs text-gray-300">
-              {user?.role}
+            <p className="text-xs text-gray-300 truncate">
+              {user?.role || 'Role not set'}
+            </p>
+            <p className="text-xs text-gray-400 truncate">
+              {user?.email || 'Email not set'}
             </p>
           </div>
         </div>
