@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { UserProvider } from './contexts/UserContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Transactions from './components/Transactions';
@@ -36,66 +37,68 @@ const Layout = ({ children }) => {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Dashboard />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/transactions"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Transactions />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/invoices"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Invoices />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/reports"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Reports />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Settings />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+      <UserProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/transactions"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Transactions />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/invoices"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Invoices />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Reports />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Settings />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </UserProvider>
     </BrowserRouter>
   );
 }

@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export const UserContext = createContext();
+export const UserContext = createContext(null);
 
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -16,7 +16,7 @@ export const UserProvider = ({ children }) => {
                 return;
             }
 
-            const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/account/profile', {
+            const response = await fetch('/api/account/profile', {
                 headers: {
                     'Authorization': `Basic ${credentials}`
                 }
