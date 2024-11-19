@@ -245,11 +245,28 @@ const Invoices = () => {
   }, [invoices, sortConfig]);
 
   if (isLoading) {
-    return <div className="p-6 text-center">Loading invoices...</div>;
+    return (
+      <div className="p-6 ml-64 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="p-6 text-center text-red-600">{error}</div>;
+    return (
+      <div className="p-6 ml-64">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+          <button 
+            className="underline ml-2"
+            onClick={() => window.location.reload()}
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -276,76 +293,72 @@ const Invoices = () => {
           <p className="text-gray-500">No invoices found</p>
         </div>
       ) : (
-        <div className="bg-white shadow rounded-lg">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                {[
-                  { label: 'Invoice #', key: 'id' },
-                  { label: 'Client', key: 'clientName' },
-                  { label: 'Due Date', key: 'dueDate' },
-                  { label: 'Amount', key: 'amount' },
-                  { label: 'Status', key: 'status' },
-                  { label: 'Actions', key: 'actions' }
-                ].map((header) => (
-                  <th
-                    key={header.key}
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                    onClick={() => header.key !== 'actions' && requestSort(header.key)}
-                  >
-                    {header.label} {sortConfig?.key === header.key && (
-                      <span className="ml-1">
-                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                      </span>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {sortedInvoices.map((invoice) => (
-                <tr
-                  key={invoice.id}
-                  onClick={() => {
-                    const formattedInvoice = {
-                      ...invoice,
-                      items: Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || '[]'),
-                      clientName: invoice.client_name || invoice.clientName,
-                      dueDate: invoice.due_date || invoice.dueDate,
-                      status: invoice.status || 'draft',
-                      amount: Number(invoice.amount) || 0
-                    };
-                    setSelectedInvoice(formattedInvoice);
-                    setIsSlideoutOpen(true);
-                  }}
-                  className="hover:bg-gray-50 cursor-pointer"
+        <table className="min-w-full">
+          <thead>
+            <tr>
+              {[
+                { label: 'Invoice #', key: 'id' },
+                { label: 'Client', key: 'clientName' },
+                { label: 'Due Date', key: 'dueDate' },
+                { label: 'Amount', key: 'amount' },
+                { label: 'Status', key: 'status' },
+                { label: 'Actions', key: 'actions' }
+              ].map((header) => (
+                <th
+                  key={header.key}
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                  onClick={() => header.key !== 'actions' && requestSort(header.key)}
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    #{typeof invoice.id === 'string' ? invoice.id.slice(0, 8) : invoice.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {invoice.clientName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {new Date(invoice.dueDate).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    ${Number(invoice.amount).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[invoice.status]}`}>
-                      {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={e => e.stopPropagation()}>
-                    {renderActionMenu(invoice)}
-                  </td>
-                </tr>
+                  {header.label} {sortConfig?.key === header.key && (
+                    sortConfig.direction === 'asc' ? '↑' : '↓'
+                  )}
+                </th>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedInvoices.map((invoice) => (
+              <tr
+                key={invoice.id}
+                onClick={() => {
+                  const formattedInvoice = {
+                    ...invoice,
+                    items: Array.isArray(invoice.items) ? invoice.items : JSON.parse(invoice.items || '[]'),
+                    clientName: invoice.client_name || invoice.clientName,
+                    dueDate: invoice.due_date || invoice.dueDate,
+                    status: invoice.status || 'draft',
+                    amount: Number(invoice.amount) || 0
+                  };
+                  setSelectedInvoice(formattedInvoice);
+                  setIsSlideoutOpen(true);
+                }}
+                className="border-t hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+              >
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  #{typeof invoice.id === 'string' ? invoice.id.slice(0, 8) : invoice.id}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {invoice.clientName}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {new Date(invoice.dueDate).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  ${Number(invoice.amount).toLocaleString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[invoice.status]}`}>
+                    {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={e => e.stopPropagation()}>
+                  {renderActionMenu(invoice)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
 
       {isSlideoutOpen && (
