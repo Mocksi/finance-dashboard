@@ -271,6 +271,8 @@ const Invoices = () => {
       }
 
       const data = await response.json();
+      console.log('Invoice details from server:', data);
+      
       return {
         ...data,
         clientName: data.client_name,
