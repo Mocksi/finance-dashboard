@@ -271,14 +271,18 @@ const Invoices = () => {
       }
 
       const data = await response.json();
-      console.log('Invoice details from server:', data);
-      
-      return {
+      console.log('Raw data from server:', data); // Debug log 1
+
+      const formattedInvoice = {
         ...data,
         clientName: data.client_name,
-        dueDate: data.due_date || '',
+        dueDate: data.due_date,
         items: Array.isArray(data.items) ? data.items : JSON.parse(data.items || '[]')
       };
+      
+      console.log('Formatted invoice:', formattedInvoice); // Debug log 2
+      return formattedInvoice;
+      
     } catch (error) {
       console.error('Error fetching invoice details:', error);
       setError('Failed to load invoice details');

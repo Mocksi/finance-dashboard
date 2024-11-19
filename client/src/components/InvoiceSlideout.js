@@ -17,11 +17,15 @@ const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
   });
 
   useEffect(() => {
+    console.log('Invoice received in slideout:', invoice);
     if (invoice) {
-      setFormData({
+      const formattedDate = invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '';
+      console.log('Formatted date:', formattedDate);
+      
+      const newFormData = {
         id: invoice.id,
         clientName: invoice.clientName,
-        dueDate: invoice.dueDate,
+        dueDate: formattedDate,
         status: invoice.status,
         items: invoice.items?.length ? invoice.items : [{
           description: '',
@@ -29,7 +33,10 @@ const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
           rate: 0,
           amount: 0
         }]
-      });
+      };
+      console.log('Setting form data to:', newFormData);
+      
+      setFormData(newFormData);
       setIsLoading(false);
     }
   }, [invoice]);
@@ -171,7 +178,7 @@ const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
                     <label className="block text-sm font-medium text-gray-700">Due Date</label>
                     <input
                       type="date"
-                      value={formData.dueDate}
+                      value={formData.dueDate || ''}
                       onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       required

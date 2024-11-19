@@ -52,57 +52,52 @@ const Settings = () => {
   }, []);
 
   // Update company submit handler
-  const handleCompanySubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleCompanySubmit = async (formData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/account/company`, {
+      const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/account/company', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${localStorage.getItem('credentials')}`
+          'Authorization': localStorage.getItem('authHeader'),
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(companyForm)
+        body: JSON.stringify(formData)
       });
 
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Company settings updated successfully' });
-        fetchUserProfile(); // Refresh user data
-      } else {
-        throw new Error('Failed to update company settings');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update company');
       }
+
+      const updatedCompany = await response.json();
+      setUser(prev => ({ ...prev, ...updatedCompany }));
+      setSuccess('Company settings updated successfully');
     } catch (error) {
-      setMessage({ type: 'error', text: error.message });
-    } finally {
-      setLoading(false);
+      setError(error.message);
     }
   };
 
   // Update user submit handler
-  const handleUserSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleUserSubmit = async (formData) => {
     try {
-      const { email, ...updateData } = userForm; // Exclude email from the update
-      const response = await fetch(`${API_BASE_URL}/account/profile`, {
+      const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/account/profile', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${localStorage.getItem('credentials')}`
+          'Authorization': localStorage.getItem('authHeader'),
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(updateData)
+        body: JSON.stringify(formData)
       });
 
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Profile updated successfully' });
-        fetchUserProfile();
-      } else {
-        throw new Error('Failed to update profile');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update profile');
       }
+
+      const updatedProfile = await response.json();
+      setUser(prev => ({ ...prev, ...updatedProfile }));
+      setSuccess('Profile updated successfully');
     } catch (error) {
-      setMessage({ type: 'error', text: error.message });
-    } finally {
-      setLoading(false);
+      setError(error.message);
     }
   };
 

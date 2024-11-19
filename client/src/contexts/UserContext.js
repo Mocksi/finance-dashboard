@@ -8,38 +8,34 @@ export const UserProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    const fetchUserProfile = async () => {
-        const authHeader = localStorage.getItem('authHeader');
-        if (!authHeader) {
-            setUser(null);
-            setLoading(false);
-            return null;
-        }
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            try {
+                const authHeader = localStorage.getItem('authHeader');
+                if (!authHeader) return;
 
-        const userData = {
-            id: '1c571c71-b298-4d0f-8e30-43b1ec18dfa3',
-            email: 'sarah.chen@techflow.io',
-            first_name: 'Sarah',
-            last_name: 'Chen',
-            role: 'Admin',
-            avatar_url: '/avatar.jpg',
-            company_id: '1',
-            company_name: 'TechFlow',
-            company_domain: 'techflow.io',
-            company_logo: '/logo.png'
+                const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/account/profile', {
+                    headers: {
+                        'Authorization': authHeader
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setUser(data);
+                }
+            } catch (error) {
+                console.error('Error fetching user profile:', error);
+            } finally {
+                setLoading(false);
+            }
         };
 
-        setUser(userData);
-        setLoading(false);
-        return userData;
-    };
-
-    useEffect(() => {
         fetchUserProfile();
     }, []);
 
     return (
-        <UserContext.Provider value={{ user, loading, fetchUserProfile }}>
+        <UserContext.Provider value={{ user, setUser, loading }}>
             {children}
         </UserContext.Provider>
     );
