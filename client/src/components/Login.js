@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, fetchUserProfile } = useContext(UserContext);
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
   });
   const [error, setError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const VALID_EMAIL = 'sarah.chen@techflow.io';
   const VALID_PASSWORD = 'testpass123';
@@ -17,30 +19,39 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    if (isLoggingIn) return; // Prevent multiple submissions
+    setIsLoggingIn(true);
+    
     if (credentials.email === VALID_EMAIL && credentials.password === VALID_PASSWORD) {
       const base64Credentials = btoa(VALID_EMAIL + ':' + VALID_PASSWORD);
       const authHeader = `Basic ${base64Credentials}`;
       
       try {
         localStorage.setItem('authHeader', authHeader);
-        await fetchUserProfile();
-        navigate('/techflow.io');
+        const userData = await fetchUserProfile();
+        if (userData) {
+          // Use replace instead of push to prevent back button issues
+          navigate('/techflow.io', { replace: true });
+        }
       } catch (error) {
         console.error('Login error:', error);
         setError('Failed to login. Please try again.');
         localStorage.removeItem('authHeader');
+      } finally {
+        setIsLoggingIn(false);
       }
     } else {
       setError('Invalid credentials. Try sarah.chen@techflow.io / testpass123');
+      setIsLoggingIn(false);
     }
   };
 
-  // Redirect if already logged in
+  // Single redirect check on mount or when user changes
   useEffect(() => {
-    if (user) {
-      navigate('/techflow.io');
+    if (user && location.pathname === '/login') {
+      navigate('/techflow.io', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, location]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,6 +60,11 @@ const Login = () => {
       [name]: value
     }));
   };
+
+  // If already logged in, show loading state
+  if (user) {
+    return <div>Redirecting...</div>;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -103,9 +119,12 @@ const Login = () => {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={isLoggingIn}
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                isLoggingIn ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
             >
-              Sign in
+              {isLoggingIn ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
         </form>
