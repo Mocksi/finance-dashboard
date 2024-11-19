@@ -44,22 +44,29 @@ const Navigation = ({ onLogout }) => {
   return (
     <div className="fixed inset-y-0 left-0 w-64 bg-gray-800 text-white flex flex-col z-10">
       <div className="p-4 border-b border-gray-700">
-        {user?.company_logo ? (
-          <img 
-            src={user.company_logo} 
-            alt="Company Logo"
-            className="h-8 w-auto max-w-[200px] object-contain"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.style.display = 'none';
-              e.target.nextElementSibling.style.display = 'block';
-            }}
-          />
-        ) : (
-          <h1 className="text-xl font-bold">
+        <div className="h-8 flex items-center">
+          {user?.company_logo ? (
+            <img 
+              src={user.company_logo} 
+              alt="Company Logo"
+              className="h-8 w-auto max-w-[200px] object-contain"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                // Find the fallback element and show it
+                const fallback = e.target.parentElement.querySelector('.fallback-text');
+                if (fallback) {
+                  fallback.style.display = 'block';
+                }
+              }}
+            />
+          ) : null}
+          <h1 
+            className="text-xl font-bold fallback-text"
+            style={{ display: user?.company_logo ? 'none' : 'block' }}
+          >
             Financy
           </h1>
-        )}
+        </div>
       </div>
 
       <nav className="flex-1 p-4">
@@ -84,7 +91,7 @@ const Navigation = ({ onLogout }) => {
 
       <div className="p-4 border-t border-gray-700">
         <div 
-          onClick={() => navigate('/settings')}
+          onClick={() => navigate(`/${domain}/settings`)}
           className="mb-4 flex items-center cursor-pointer hover:bg-gray-700 p-2 rounded-md transition-colors"
         >
           <div className="flex-shrink-0">
@@ -94,14 +101,17 @@ const Navigation = ({ onLogout }) => {
                 alt=""
                 className="h-8 w-8 rounded-full object-cover"
                 onError={(e) => {
-                  e.target.onerror = null;
                   e.target.style.display = 'none';
-                  e.target.nextElementSibling.style.display = 'flex';
+                  // Find the fallback element and show it
+                  const fallback = e.target.parentElement.querySelector('.avatar-fallback');
+                  if (fallback) {
+                    fallback.style.display = 'flex';
+                  }
                 }}
               />
             ) : null}
             <div 
-              className={`h-8 w-8 rounded-full flex items-center justify-center text-white font-medium ${
+              className={`h-8 w-8 rounded-full flex items-center justify-center text-white font-medium avatar-fallback ${
                 user?.first_name ? getInitialsColor(user.first_name) : 'bg-gray-600'
               }`}
               style={{ display: user?.avatar_url ? 'none' : 'flex' }}
