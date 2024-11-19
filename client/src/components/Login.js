@@ -20,17 +20,19 @@ const Login = () => {
       const base64Credentials = btoa(`${credentials.email}:${credentials.password}`);
       localStorage.setItem('credentials', base64Credentials);
       
-      // Redirect to the company domain dashboard
-      navigate('/techflow.io');
+      // Add a small delay to ensure credentials are saved before redirect
+      setTimeout(() => {
+        navigate('/techflow.io');
+      }, 100);
     } else {
       setError('Invalid credentials. Try sarah.chen@techflow.io / testpass123');
     }
   };
 
-  // Redirect to login if already authenticated
+  // Check if already logged in
   useEffect(() => {
-    const credentials = localStorage.getItem('credentials');
-    if (credentials) {
+    const savedCredentials = localStorage.getItem('credentials');
+    if (savedCredentials) {
       navigate('/techflow.io');
     }
   }, [navigate]);
