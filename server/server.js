@@ -7,6 +7,7 @@ const { Pool } = require('pg');
 const path = require('path');
 const transactionsRouter = require('./routes/transactions');
 const dashboardRouter = require('./routes/dashboard');
+const uploadRouter = require('./routes/upload');
 
 const app = express();
 
@@ -140,6 +141,12 @@ app.use('/api/transactions', transactionsRouter);
 // Mount the dashboard router at /api/dashboard
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/invoices', require('./routes/invoices'));
+
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
+
+// Use upload router
+app.use('/api/upload', uploadRouter);
 
 // Serve React app - this should be after all API routes
 app.get('*', (req, res) => {

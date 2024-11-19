@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { UserContext } from '../contexts/UserContext';
 import { Save } from 'lucide-react';
+import ImageUpload from './ImageUpload';
 
 const Settings = () => {
   const { user, fetchUserProfile } = useContext(UserContext);
@@ -131,15 +132,11 @@ const Settings = () => {
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Logo URL</label>
-              <input
-                type="text"
-                value={companyForm.logo_url}
-                onChange={(e) => setCompanyForm({...companyForm, logo_url: e.target.value})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
+            <ImageUpload
+              currentImageUrl={companyForm.logo_url}
+              onImageSelected={(url) => setCompanyForm({...companyForm, logo_url: url})}
+              label="Company Logo"
+            />
             <button
               type="submit"
               disabled={loading}
@@ -203,15 +200,11 @@ const Settings = () => {
                 <option value="Analyst">Analyst</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Profile Photo URL</label>
-              <input
-                type="text"
-                value={userForm.avatar_url}
-                onChange={(e) => setUserForm({...userForm, avatar_url: e.target.value})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
+            <ImageUpload
+              currentImageUrl={userForm.avatar_url}
+              onImageSelected={(url) => setUserForm({...userForm, avatar_url: url})}
+              label="Profile Photo"
+            />
             <button
               type="submit"
               disabled={loading}
