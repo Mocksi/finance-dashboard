@@ -2,13 +2,15 @@ import React, { useState, useContext, useEffect } from 'react';
 import { UserContext } from '../contexts/UserContext';
 import { Save } from 'lucide-react';
 import ImageUpload from './ImageUpload';
+import { useNavigate } from 'react-router-dom';
 
 const Settings = () => {
   const { user, fetchUserProfile } = useContext(UserContext);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const navigate = useNavigate();
   
-  // Initialize forms with empty values
   const [companyForm, setCompanyForm] = useState({
     name: '',
     domain: '',
@@ -23,104 +25,9 @@ const Settings = () => {
     avatar_url: ''
   });
 
-  // Add new state for team members
-  const [teamMembers, setTeamMembers] = useState([]);
-  
-  // Add API base URL
-  const API_BASE_URL = 'https://finance-dashboard-tfn6.onrender.com/api';
-
-  // Update team members fetch
-  useEffect(() => {
-    const fetchTeamMembers = async () => {
-      try {
-        const authHeader = localStorage.getItem('authHeader');
-        if (!authHeader) return;
-
-        const response = await fetch(`${API_BASE_URL}/account/team`, {
-          headers: {
-            'Authorization': authHeader,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setTeamMembers(data);
-        }
-      } catch (error) {
-        console.error('Error fetching team members:', error);
-      }
-    };
-
-    fetchTeamMembers();
-  }, []);
-
-  // Update company submit handler
-  const handleCompanySubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/account/company`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': localStorage.getItem('authHeader'),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(companyForm)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update company settings');
-      }
-
-      const data = await response.json();
-      setCompanyForm(data);
-      setMessage({ type: 'success', text: 'Company settings updated successfully' });
-      await fetchUserProfile(); // Refresh user data
-    } catch (error) {
-      setMessage({ type: 'error', text: error.message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Update user submit handler
-  const handleUserSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/account/profile`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': localStorage.getItem('authHeader'),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(userForm)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
-
-      const data = await response.json();
-      setUserForm(data);
-      setMessage({ type: 'success', text: 'Profile updated successfully' });
-      await fetchUserProfile(); // Refresh user data
-    } catch (error) {
-      setMessage({ type: 'error', text: error.message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Update form values when user data is loaded
+  // Initialize forms with user data when it loads
   useEffect(() => {
     if (user) {
-      setCompanyForm({
-        name: user.company_name || '',
-        domain: user.company_domain || '',
-        logo_url: user.company_logo || ''
-      });
-
       setUserForm({
         first_name: user.first_name || '',
         last_name: user.last_name || '',
@@ -128,8 +35,90 @@ const Settings = () => {
         role: user.role || '',
         avatar_url: user.avatar_url || ''
       });
+      
+      setCompanyForm({
+        name: user.company_name || '',
+        domain: user.company_domain || '',
+        logo_url: user.company_logo || ''
+      });
     }
   }, [user]);
+
+  const handleCompanySubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      const authHeader = localStorage.getItem('authHeader');
+      if (!authHeader) {
+        navigate('/login', { replace: true });
+        return;
+      }
+
+      const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/account/company', {
+        method: 'PUT',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(companyForm)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update company');
+      }
+
+      const data = await response.json();
+      setCompanyForm(data);
+      setSuccess('Company settings updated successfully');
+      await fetchUserProfile(); // Refresh the user data
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUserSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      const authHeader = localStorage.getItem('authHeader');
+      if (!authHeader) {
+        navigate('/login', { replace: true });
+        return;
+      }
+
+      const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/account/profile', {
+        method: 'PUT',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userForm)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update profile');
+      }
+
+      const data = await response.json();
+      setUserForm(data);
+      setSuccess('Profile updated successfully');
+      await fetchUserProfile(); // Refresh the user data
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -148,11 +137,15 @@ const Settings = () => {
           <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
         </div>
 
-        {message.text && (
-          <div className={`mb-4 p-4 rounded-md ${
-            message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-          }`}>
-            {message.text}
+        {error && (
+          <div className="mb-4 p-4 rounded-md bg-red-50 text-red-800">
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 p-4 rounded-md bg-green-50 text-green-800">
+            {success}
           </div>
         )}
 
@@ -263,39 +256,6 @@ const Settings = () => {
                 Save Personal Settings
               </button>
             </form>
-          </div>
-        </div>
-
-        {/* Team Members Section */}
-        <div className="bg-white shadow rounded-lg mt-6">
-          <div className="p-4 sm:p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Team Members</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {teamMembers.map((member) => (
-                    <tr key={member.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {member.first_name} {member.last_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {member.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {member.role}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </div>
         </div>
       </div>

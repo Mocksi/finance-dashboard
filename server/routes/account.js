@@ -40,36 +40,48 @@ router.get('/profile', auth, async (req, res) => {
     }
 });
 
-// Add team members endpoint with proper auth
+// Get team members endpoint
 router.get('/team', auth, async (req, res) => {
   try {
+    // Get user's company_id first
+    const userResult = await pool.query(
+      'SELECT company_id FROM users WHERE email = $1',
+      [req.user.email]
+    );
+
+    if (!userResult.rows[0]?.company_id) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+
     const result = await pool.query(`
       SELECT 
-        tm.id,
-        tm.first_name,
-        tm.last_name,
-        tm.email,
-        tm.role,
-        tm.status
-      FROM team_members tm
-      JOIN users u ON u.company_id = tm.company_id
-      WHERE u.email = $1
-      ORDER BY tm.role, tm.first_name, tm.last_name
-    `, [req.user.email]);
+        u.id,
+        u.email,
+        u.first_name,
+        u.last_name,
+        u.role,
+        u.avatar_url
+      FROM users u
+      WHERE u.company_id = $1
+      ORDER BY u.role, u.first_name, u.last_name
+    `, [userResult.rows[0].company_id]);
 
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching team members:', error);
-    res.status(500).json({ error: 'Failed to fetch team members' });
+    console.error('Error fetching team:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch team members',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 
-// Add company update endpoint
+// Update company endpoint
 router.put('/company', auth, async (req, res) => {
   try {
     const { name, domain, logo_url } = req.body;
     
-    // Get user's company_id
+    // Get user's company_id first
     const userResult = await pool.query(
       'SELECT company_id FROM users WHERE email = $1',
       [req.user.email]
@@ -90,14 +102,21 @@ router.put('/company', auth, async (req, res) => {
       RETURNING *
     `, [name, domain, logo_url, userResult.rows[0].company_id]);
 
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating company:', error);
-    res.status(500).json({ error: 'Failed to update company' });
+    res.status(500).json({ 
+      error: 'Failed to update company',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 
-// Add profile update endpoint
+// Update profile endpoint
 router.put('/profile', auth, async (req, res) => {
   try {
     const { first_name, last_name, avatar_url } = req.body;
@@ -120,7 +139,10 @@ router.put('/profile', auth, async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating profile:', error);
-    res.status(500).json({ error: 'Failed to update profile' });
+    res.status(500).json({ 
+      error: 'Failed to update profile',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 
