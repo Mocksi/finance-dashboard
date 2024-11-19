@@ -166,18 +166,40 @@ const Transactions = () => {
     if (!validateForm()) return;
 
     try {
-      const response = await fetch(`/api/transactions/${selectedTransaction.id}`, {
+      const credentials = localStorage.getItem('credentials');
+      
+      if (!credentials) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch(`https://finance-dashboard-tfn6.onrender.com/api/transactions/${selectedTransaction.id}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(selectedTransaction)
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('credentials');
+        navigate('/login');
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const updatedTransaction = await response.json();
-      setTransactions(transactions.map(tx => tx.id === updatedTransaction.id ? updatedTransaction : tx));
+      setTransactions(transactions.map(tx => 
+        tx.id === updatedTransaction.id ? updatedTransaction : tx
+      ));
       closeSlideout();
     } catch (error) {
       console.error('Error saving transaction:', error);
+      setError(error.message);
     }
   };
 
