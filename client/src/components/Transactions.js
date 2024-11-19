@@ -173,13 +173,23 @@ const Transactions = () => {
         return;
       }
 
+      // Log the data being sent
+      console.log('Saving transaction:', selectedTransaction);
+
+      // Ensure credit/debit are numbers
+      const payload = {
+        ...selectedTransaction,
+        credit: selectedTransaction.type === 'income' ? Number(selectedTransaction.credit) : 0,
+        debit: selectedTransaction.type === 'expense' ? Number(selectedTransaction.debit) : 0
+      };
+
       const response = await fetch(`https://finance-dashboard-tfn6.onrender.com/api/transactions/${selectedTransaction.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(selectedTransaction)
+        body: JSON.stringify(payload)
       });
 
       if (response.status === 401) {
@@ -189,7 +199,8 @@ const Transactions = () => {
       }
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.details || 'Failed to save transaction');
       }
 
       const updatedTransaction = await response.json();

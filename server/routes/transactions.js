@@ -68,7 +68,28 @@ router.get('/', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { date, description, category, department, credit, debit } = req.body;
+    const { date, description, category, department, type, credit, debit } = req.body;
+
+    // Log the incoming data for debugging
+    console.log('Updating transaction:', {
+      id,
+      date,
+      description,
+      category,
+      department,
+      type,
+      credit,
+      debit
+    });
+
+    // Validate the UUID format
+    if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      return res.status(400).json({ error: 'Invalid transaction ID format' });
+    }
+
+    // Convert credit/debit to numbers and handle null/undefined
+    const creditValue = credit ? Number(credit) : 0;
+    const debitValue = debit ? Number(debit) : 0;
 
     const result = await pool.query(
       `UPDATE transactions 
@@ -76,24 +97,35 @@ router.put('/:id', auth, async (req, res) => {
            description = $2, 
            category = $3, 
            department = $4, 
-           credit = COALESCE($5, 0), 
-           debit = COALESCE($6, 0),
+           credit = $5, 
+           debit = $6,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7::uuid
+       WHERE id = $7
        RETURNING *`,
-      [date, description, category || '', department, credit, debit, id]
+      [
+        date,
+        description,
+        category || '',
+        department || '',
+        creditValue,
+        debitValue,
+        id
+      ]
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Transaction not found' });
     }
 
+    // Log the result for debugging
+    console.log('Update successful:', result.rows[0]);
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating transaction:', error);
     res.status(500).json({ 
       error: 'Failed to update transaction',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+      details: process.env.NODE_ENV === 'development' ? error.toString() : undefined 
     });
   }
 });
