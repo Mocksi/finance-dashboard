@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { UserContext } from '../contexts/UserContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { fetchUserProfile } = useContext(UserContext);
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
   });
   const [error, setError] = useState('');
 
-  // Updated hardcoded credentials
   const VALID_EMAIL = 'sarah.chen@techflow.io';
   const VALID_PASSWORD = 'testpass123';
 
@@ -20,10 +21,14 @@ const Login = () => {
       const base64Credentials = btoa(`${VALID_EMAIL}:${VALID_PASSWORD}`);
       localStorage.setItem('credentials', base64Credentials);
       
-      // Add a small delay to ensure credentials are saved before redirect
-      setTimeout(() => {
+      try {
+        await fetchUserProfile();
         navigate('/techflow.io');
-      }, 100);
+      } catch (error) {
+        console.error('Login error:', error);
+        setError('Failed to login. Please try again.');
+        localStorage.removeItem('credentials');
+      }
     } else {
       setError('Invalid credentials. Try sarah.chen@techflow.io / testpass123');
     }
@@ -31,11 +36,21 @@ const Login = () => {
 
   // Check if already logged in
   useEffect(() => {
-    const savedCredentials = localStorage.getItem('credentials');
-    if (savedCredentials) {
-      navigate('/techflow.io');
-    }
-  }, [navigate]);
+    const checkAuth = async () => {
+      const savedCredentials = localStorage.getItem('credentials');
+      if (savedCredentials) {
+        try {
+          await fetchUserProfile();
+          navigate('/techflow.io');
+        } catch (error) {
+          console.error('Auth check error:', error);
+          localStorage.removeItem('credentials');
+        }
+      }
+    };
+    
+    checkAuth();
+  }, [navigate, fetchUserProfile]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

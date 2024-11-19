@@ -15,29 +15,30 @@ export const UserProvider = ({ children }) => {
         
         if (!credentials) {
             setLoading(false);
-            navigate('/login');
+            setUser(null);
             return;
         }
 
         try {
+            console.log('Fetching profile...');
             const response = await fetch(`${API_BASE_URL}/account/profile`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Basic ${credentials}`,
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Origin': window.location.origin
-                },
-                credentials: 'include'
+                    'Accept': 'application/json'
+                }
             });
 
+            console.log('Response status:', response.status);
+
+            if (response.status === 401) {
+                localStorage.removeItem('credentials');
+                setUser(null);
+                return;
+            }
+
             if (!response.ok) {
-                if (response.status === 401) {
-                    localStorage.removeItem('credentials');
-                    setUser(null);
-                    navigate('/login');
-                    return;
-                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
@@ -62,20 +63,27 @@ export const UserProvider = ({ children }) => {
             };
 
             setUser(userData);
+            return userData;
         } catch (error) {
             console.error('Error fetching user profile:', error);
-            if (error.message.includes('401')) {
-                localStorage.removeItem('credentials');
-                setUser(null);
-                navigate('/login');
-            }
+            localStorage.removeItem('credentials');
+            setUser(null);
+            throw error;
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchUserProfile();
+        const checkAuth = async () => {
+            try {
+                await fetchUserProfile();
+            } catch (error) {
+                console.error('Initial auth check failed:', error);
+            }
+        };
+        
+        checkAuth();
     }, []);
 
     return (

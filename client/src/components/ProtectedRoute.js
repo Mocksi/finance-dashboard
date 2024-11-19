@@ -1,28 +1,22 @@
-import { Navigate } from 'react-router-dom';
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
 
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useContext(UserContext);
-  const credentials = localStorage.getItem('credentials');
+    const { user, loading } = useContext(UserContext);
+    const navigate = useNavigate();
 
-  // Show nothing while checking authentication
-  if (loading) {
-    return null;
-  }
+    useEffect(() => {
+        if (!loading && !user) {
+            navigate('/login');
+        }
+    }, [user, loading, navigate]);
 
-  // Redirect to login if not authenticated
-  if (!credentials) {
-    return <Navigate to="/login" replace />;
-  }
+    if (loading) {
+        return <div>Loading...</div>;
+    }
 
-  // Wait for user data to load
-  if (!user) {
-    return null;
-  }
-
-  // Render the protected content
-  return children;
+    return user ? children : null;
 };
 
 export default ProtectedRoute; 
