@@ -17,7 +17,7 @@ const Login = () => {
     e.preventDefault();
     
     if (credentials.email === VALID_EMAIL && credentials.password === VALID_PASSWORD) {
-      const base64Credentials = btoa(`${credentials.email}:${credentials.password}`);
+      const base64Credentials = btoa(`${VALID_EMAIL}:${VALID_PASSWORD}`);
       localStorage.setItem('credentials', base64Credentials);
       
       // Add a small delay to ensure credentials are saved before redirect

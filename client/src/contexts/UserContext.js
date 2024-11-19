@@ -23,13 +23,18 @@ export const UserProvider = ({ children }) => {
             console.log('Fetching profile with credentials:', credentials);
             
             const response = await fetch(`${API_BASE_URL}/users/profile`, {
+                method: 'GET',
                 headers: {
                     'Authorization': `Basic ${credentials}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 }
             });
 
             console.log('Profile response status:', response.status);
+
+            const responseText = await response.text();
+            console.log('Raw response:', responseText);
 
             if (response.status === 401) {
                 localStorage.removeItem('credentials');
@@ -42,10 +47,16 @@ export const UserProvider = ({ children }) => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const data = await response.json();
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                console.error('Failed to parse JSON:', e);
+                throw new Error('Invalid JSON response from server');
+            }
+
             console.log('Profile data:', data);
             
-            // Transform the data to match our frontend structure
             const userData = {
                 id: data.user_id,
                 email: data.email,
@@ -72,7 +83,6 @@ export const UserProvider = ({ children }) => {
         }
     };
 
-    // Fetch user profile on mount and when credentials change
     useEffect(() => {
         fetchUserProfile();
     }, []);
