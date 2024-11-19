@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { UserContext } from '../context/UserContext';
 
 const Transactions = () => {
   const navigate = useNavigate();
+  const { user } = useContext(UserContext);
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -41,50 +43,39 @@ const Transactions = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const credentials = localStorage.getItem('credentials');
-        
-        // Redirect to login if no credentials exist
-        if (!credentials) {
-          navigate('/login');
+        const authHeader = localStorage.getItem('authHeader');
+        if (!authHeader) {
+          navigate('/login', { replace: true });
           return;
         }
 
         const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/transactions', {
           headers: {
-            'Authorization': `Basic ${credentials}`,
+            'Authorization': authHeader,
             'Content-Type': 'application/json'
           }
         });
 
         if (response.status === 401) {
-          // Credentials are invalid
-          localStorage.removeItem('credentials');
-          navigate('/login');
+          localStorage.removeItem('authHeader');
+          navigate('/login', { replace: true });
           return;
         }
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const data = await response.json();
-        setTransactions(Array.isArray(data.transactions) ? data.transactions : []);
-        setIsLoading(false);
+        setTransactions(data.transactions);
       } catch (error) {
         console.error('Error fetching transactions:', error);
-        setError(error.message);
+        setError('Failed to load transactions');
+      } finally {
         setIsLoading(false);
-        
-        // If the error is auth-related, redirect to login
-        if (error.message.includes('401')) {
-          localStorage.removeItem('credentials');
-          navigate('/login');
-        }
       }
     };
 
-    fetchTransactions();
-  }, [navigate]);
+    if (user) {
+      fetchTransactions();
+    }
+  }, [navigate, user]);
 
   const requestSort = (key) => {
     let direction = 'asc';
@@ -166,35 +157,30 @@ const Transactions = () => {
     if (!validateForm()) return;
 
     try {
-      const credentials = localStorage.getItem('credentials');
-      
-      if (!credentials) {
-        navigate('/login');
+      const authHeader = localStorage.getItem('authHeader');
+      if (!authHeader) {
+        navigate('/login', { replace: true });
         return;
       }
 
-      // Log the data being sent
-      console.log('Saving transaction:', selectedTransaction);
-
-      // Ensure credit/debit are numbers
       const payload = {
         ...selectedTransaction,
         credit: selectedTransaction.type === 'income' ? Number(selectedTransaction.credit) : 0,
         debit: selectedTransaction.type === 'expense' ? Number(selectedTransaction.debit) : 0
       };
 
-      const response = await fetch(`https://finance-dashboard-tfn6.onrender.com/api/transactions/${selectedTransaction.id}`, {
-        method: 'PUT',
+      const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/transactions', {
+        method: 'POST',
         headers: {
-          'Authorization': `Basic ${credentials}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
       });
 
       if (response.status === 401) {
-        localStorage.removeItem('credentials');
-        navigate('/login');
+        localStorage.removeItem('authHeader');
+        navigate('/login', { replace: true });
         return;
       }
 

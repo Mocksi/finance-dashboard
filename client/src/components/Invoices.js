@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, X } from 'lucide-react';
 import InvoiceSlideout from './InvoiceSlideout';
 import PaymentModal from './PaymentModal';
+import { UserContext } from '../contexts/UserContext';
 
 const Invoices = () => {
   const navigate = useNavigate();
+  const { user } = useContext(UserContext);
   const [invoices, setInvoices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -40,22 +42,22 @@ const Invoices = () => {
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
-        const credentials = localStorage.getItem('credentials');
-        if (!credentials) {
-          navigate('/login');
+        const authHeader = localStorage.getItem('authHeader');
+        if (!authHeader) {
+          navigate('/login', { replace: true });
           return;
         }
 
         const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/invoices', {
           headers: {
-            'Authorization': `Basic ${credentials}`,
+            'Authorization': authHeader,
             'Content-Type': 'application/json'
           }
         });
 
         if (response.status === 401) {
-          localStorage.removeItem('credentials');
-          navigate('/login');
+          localStorage.removeItem('authHeader');
+          navigate('/login', { replace: true });
           return;
         }
 
@@ -70,116 +72,81 @@ const Invoices = () => {
         }));
         
         setInvoices(formattedInvoices);
-        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching invoices:', error);
         setError('Failed to load invoices');
+      } finally {
         setIsLoading(false);
       }
     };
 
-    fetchInvoices();
-  }, [navigate]);
+    if (user) {
+      fetchInvoices();
+    }
+  }, [navigate, user]);
 
   // Save invoice (create or update)
   const handleSaveInvoice = async (formData) => {
     try {
-      const credentials = localStorage.getItem('credentials');
+      const authHeader = localStorage.getItem('authHeader');
+      if (!authHeader) {
+        navigate('/login', { replace: true });
+        return;
+      }
+
       const isNewInvoice = !formData.id || typeof formData.id === 'number';
       const url = `https://finance-dashboard-tfn6.onrender.com/api/invoices${isNewInvoice ? '' : `/${formData.id}`}`;
       
-      const totalAmount = formData.items.reduce((sum, item) => 
-        sum + (Number(item.quantity) * Number(item.rate)), 0
-      );
-
-      const payload = {
-        clientName: formData.clientName,
-        amount: totalAmount,
-        dueDate: formData.dueDate,
-        status: formData.status || 'draft',
-        items: formData.items.map(item => ({
-          description: item.description,
-          quantity: Number(item.quantity),
-          rate: Number(item.rate),
-          amount: Number(item.quantity) * Number(item.rate)
-        }))
-      };
-
-      console.log('Saving invoice:', {
-        url,
-        method: isNewInvoice ? 'POST' : 'PUT',
-        data: payload
-      });
-
       const response = await fetch(url, {
         method: isNewInvoice ? 'POST' : 'PUT',
         headers: {
-          'Authorization': `Basic ${credentials}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(formData)
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.details || 'Failed to save invoice');
+        throw new Error('Failed to save invoice');
       }
 
       const savedInvoice = await response.json();
-      
-      setInvoices(prevInvoices => {
-        if (isNewInvoice) {
-          return [...prevInvoices, savedInvoice];
-        }
-        return prevInvoices.map(inv => 
-          inv.id === savedInvoice.id ? savedInvoice : inv
-        );
-      });
-
+      setInvoices(prev => isNewInvoice ? 
+        [...prev, savedInvoice] : 
+        prev.map(inv => inv.id === savedInvoice.id ? savedInvoice : inv)
+      );
       setIsSlideoutOpen(false);
       setSelectedInvoice(null);
     } catch (error) {
       console.error('Error saving invoice:', error);
-      setError(error.message);
-      throw error;
+      setError('Failed to save invoice');
     }
   };
 
   // Update invoice status
   const handleStatusUpdate = async (invoiceId, newStatus) => {
     try {
-      const credentials = localStorage.getItem('credentials');
-      
-      // If transitioning to paid status, open a payment details modal
-      if (newStatus === 'paid') {
-        const paymentDetails = {
-          date: new Date().toISOString().split('T')[0],
-          amount: invoice.amount,
-          paymentMethod: 'bank_transfer', // default value
-          notes: ''
-        };
-        setPaymentModal({ open: true, invoiceId, paymentDetails });
+      const authHeader = localStorage.getItem('authHeader');
+      if (!authHeader) {
+        navigate('/login', { replace: true });
         return;
       }
 
       const response = await fetch(`https://finance-dashboard-tfn6.onrender.com/api/invoices/${invoiceId}/status`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Basic ${credentials}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ status: newStatus })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update status');
+        throw new Error('Failed to update status');
       }
 
-      const updatedInvoice = await response.json();
-      
-      setInvoices(prevInvoices =>
-        prevInvoices.map(inv =>
+      setInvoices(prev =>
+        prev.map(inv =>
           inv.id === invoiceId ? { ...inv, status: newStatus } : inv
         )
       );

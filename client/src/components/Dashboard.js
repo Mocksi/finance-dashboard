@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Chart as ChartJS,
@@ -15,6 +15,7 @@ import {
 import { Line, Pie } from 'react-chartjs-2';
 import * as d3 from 'd3';
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { UserContext } from '../context/UserContext';
 
 // Register ChartJS components
 ChartJS.register(
@@ -31,6 +32,7 @@ ChartJS.register(
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useContext(UserContext);
   const [dashboardData, setDashboardData] = useState({
     monthlyMetrics: [],
     departmentMetrics: [],
@@ -44,43 +46,39 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const credentials = localStorage.getItem('credentials');
-        if (!credentials) {
+        const authHeader = localStorage.getItem('authHeader');
+        if (!authHeader) {
           navigate('/login');
           return;
         }
 
-        // Update the endpoint URL
-        const response = await fetch('/api/dashboard/dashboard-data', {
+        const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/dashboard/dashboard-data', {
           headers: {
-            'Authorization': `Basic ${credentials}`,
+            'Authorization': authHeader,
             'Content-Type': 'application/json'
           }
         });
 
         if (response.status === 401) {
-          localStorage.removeItem('credentials');
+          localStorage.removeItem('authHeader');
           navigate('/login');
           return;
         }
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const data = await response.json();
-        console.log('Dashboard data:', data);
         setDashboardData(data);
-        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        setError('Failed to load dashboard data. Please try again later.');
+        setError('Failed to load dashboard data');
+      } finally {
         setIsLoading(false);
       }
     };
 
-    fetchDashboardData();
-  }, [navigate]);
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [navigate, user]);
 
   // Update the monthlyData calculation
   const monthlyData = useMemo(() => {
