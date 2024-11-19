@@ -75,15 +75,10 @@ export const UserProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                await fetchUserProfile();
-            } catch (error) {
-                console.error('Initial auth check failed:', error);
-            }
-        };
-        
-        checkAuth();
+        const authHeader = localStorage.getItem('authHeader');
+        if (authHeader && !user) {
+            fetchUserProfile();
+        }
     }, []);
 
     return (
