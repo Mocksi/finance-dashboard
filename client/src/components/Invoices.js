@@ -383,7 +383,9 @@ const Invoices = () => {
                   {invoice.clientName}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  {new Date(invoice.dueDate).toLocaleDateString()}
+                  {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString(undefined, {
+                    timeZone: 'UTC'
+                  }) : ''}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                   ${Number(invoice.amount).toLocaleString()}

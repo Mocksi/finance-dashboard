@@ -19,7 +19,11 @@ const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
   useEffect(() => {
     console.log('Invoice received in slideout:', invoice);
     if (invoice) {
-      const formattedDate = invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '';
+      const formattedDate = invoice.dueDate ? 
+        new Date(invoice.dueDate)
+          .toISOString()
+          .split('T')[0] : '';
+      
       console.log('Formatted date:', formattedDate);
       
       const newFormData = {
@@ -179,7 +183,13 @@ const InvoiceSlideout = ({ invoice, onClose, onSave }) => {
                     <input
                       type="date"
                       value={formData.dueDate || ''}
-                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                      onChange={(e) => {
+                        const date = e.target.value ? 
+                          new Date(e.target.value)
+                            .toISOString()
+                            .split('T')[0] : '';
+                        setFormData({ ...formData, dueDate: date });
+                      }}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       required
                     />

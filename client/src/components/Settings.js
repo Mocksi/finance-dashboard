@@ -33,9 +33,12 @@ const Settings = () => {
   useEffect(() => {
     const fetchTeamMembers = async () => {
       try {
+        const authHeader = localStorage.getItem('authHeader');
+        if (!authHeader) return;
+
         const response = await fetch(`${API_BASE_URL}/account/team`, {
           headers: {
-            'Authorization': `Basic ${localStorage.getItem('credentials')}`,
+            'Authorization': authHeader,
             'Content-Type': 'application/json'
           }
         });
@@ -52,52 +55,60 @@ const Settings = () => {
   }, []);
 
   // Update company submit handler
-  const handleCompanySubmit = async (formData) => {
+  const handleCompanySubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     try {
-      const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/account/company', {
+      const response = await fetch(`${API_BASE_URL}/account/company`, {
         method: 'PUT',
         headers: {
           'Authorization': localStorage.getItem('authHeader'),
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(companyForm)
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update company');
+        throw new Error('Failed to update company settings');
       }
 
-      const updatedCompany = await response.json();
-      setUser(prev => ({ ...prev, ...updatedCompany }));
-      setSuccess('Company settings updated successfully');
+      const data = await response.json();
+      setCompanyForm(data);
+      setMessage({ type: 'success', text: 'Company settings updated successfully' });
+      await fetchUserProfile(); // Refresh user data
     } catch (error) {
-      setError(error.message);
+      setMessage({ type: 'error', text: error.message });
+    } finally {
+      setLoading(false);
     }
   };
 
   // Update user submit handler
-  const handleUserSubmit = async (formData) => {
+  const handleUserSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     try {
-      const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/account/profile', {
+      const response = await fetch(`${API_BASE_URL}/account/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': localStorage.getItem('authHeader'),
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(userForm)
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update profile');
+        throw new Error('Failed to update profile');
       }
 
-      const updatedProfile = await response.json();
-      setUser(prev => ({ ...prev, ...updatedProfile }));
-      setSuccess('Profile updated successfully');
+      const data = await response.json();
+      setUserForm(data);
+      setMessage({ type: 'success', text: 'Profile updated successfully' });
+      await fetchUserProfile(); // Refresh user data
     } catch (error) {
-      setError(error.message);
+      setMessage({ type: 'error', text: error.message });
+    } finally {
+      setLoading(false);
     }
   };
 
