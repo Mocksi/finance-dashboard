@@ -293,7 +293,7 @@ const Invoices = () => {
           <p className="text-gray-500">No invoices found</p>
         </div>
       ) : (
-        <table className="min-w-full">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr>
               {[
