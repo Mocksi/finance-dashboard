@@ -153,4 +153,33 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// Add this route with the other endpoints
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate the UUID format
+    if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      return res.status(400).json({ error: 'Invalid transaction ID format' });
+    }
+
+    const result = await pool.query(
+      'DELETE FROM transactions WHERE id = $1 RETURNING *',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+
+    res.json({ message: 'Transaction deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting transaction:', error);
+    res.status(500).json({ 
+      error: 'Failed to delete transaction',
+      details: process.env.NODE_ENV === 'development' ? error.toString() : undefined 
+    });
+  }
+});
+
 module.exports = router; 
