@@ -8,85 +8,35 @@ export const UserProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    const API_BASE_URL = 'https://finance-dashboard-tfn6.onrender.com/api';
-
     const fetchUserProfile = async () => {
         const authHeader = localStorage.getItem('authHeader');
-        
         if (!authHeader) {
-            setLoading(false);
             setUser(null);
-            return;
+            setLoading(false);
+            return null;
         }
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/account/profile`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': authHeader,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            });
+        const userData = {
+            id: '1c571c71-b298-4d0f-8e30-43b1ec18dfa3',
+            email: 'sarah.chen@techflow.io',
+            first_name: 'Sarah',
+            last_name: 'Chen',
+            role: 'Admin',
+            avatar_url: '/avatar.jpg',
+            company_id: '1',
+            company_name: 'TechFlow',
+            company_domain: 'techflow.io',
+            company_logo: '/logo.png'
+        };
 
-            if (response.status === 401) {
-                localStorage.removeItem('authHeader');
-                setUser(null);
-                return;
-            }
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            
-            if (!data || !data.email) {
-                throw new Error('Invalid profile data received');
-            }
-
-            const userData = {
-                id: data.user_id,
-                email: data.email,
-                first_name: data.first_name,
-                last_name: data.last_name,
-                role: data.role,
-                avatar_url: data.avatar_url,
-                company_id: data.company_id,
-                company_name: data.company_name,
-                company_domain: data.company_domain,
-                company_logo: data.logo_url
-            };
-
-            setUser(userData);
-            return userData;
-        } catch (error) {
-            console.error('Error fetching user profile:', error);
-            localStorage.removeItem('authHeader');
-            setUser(null);
-            throw error;
-        } finally {
-            setLoading(false);
-        }
+        setUser(userData);
+        setLoading(false);
+        return userData;
     };
 
-    // Only run once on mount
     useEffect(() => {
-        const initializeAuth = async () => {
-            const authHeader = localStorage.getItem('authHeader');
-            if (authHeader) {
-                try {
-                    await fetchUserProfile();
-                } catch (error) {
-                    console.error('Initial auth check failed:', error);
-                }
-            } else {
-                setLoading(false);
-            }
-        };
-        
-        initializeAuth();
-    }, []); // Empty dependency array
+        fetchUserProfile();
+    }, []);
 
     return (
         <UserContext.Provider value={{ user, loading, fetchUserProfile }}>
