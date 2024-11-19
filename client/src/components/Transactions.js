@@ -170,7 +170,8 @@ const Transactions = () => {
         return;
       }
 
-      const response = await fetch(`https://finance-dashboard-tfn6.onrender.com/api/transactions/${id}`, {
+      const companyDomain = user?.company_domain || 'techflow.io';
+      const response = await fetch(`https://finance-dashboard-tfn6.onrender.com/api/${companyDomain}/transactions/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': authHeader,
@@ -179,7 +180,7 @@ const Transactions = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete transaction');
+        throw new Error(`Failed to delete transaction: ${response.status}`);
       }
 
       setTransactions(prev => prev.filter(t => t.id !== id));
