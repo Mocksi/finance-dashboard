@@ -18,16 +18,17 @@ const Login = () => {
     e.preventDefault();
     
     if (credentials.email === VALID_EMAIL && credentials.password === VALID_PASSWORD) {
-      const base64Credentials = btoa(`${VALID_EMAIL}:${VALID_PASSWORD}`);
-      localStorage.setItem('credentials', base64Credentials);
+      const base64Credentials = btoa(VALID_EMAIL + ':' + VALID_PASSWORD);
+      const authHeader = `Basic ${base64Credentials}`;
       
       try {
+        localStorage.setItem('authHeader', authHeader);
         await fetchUserProfile();
         navigate('/techflow.io');
       } catch (error) {
         console.error('Login error:', error);
         setError('Failed to login. Please try again.');
-        localStorage.removeItem('credentials');
+        localStorage.removeItem('authHeader');
       }
     } else {
       setError('Invalid credentials. Try sarah.chen@techflow.io / testpass123');
@@ -37,14 +38,14 @@ const Login = () => {
   // Check if already logged in
   useEffect(() => {
     const checkAuth = async () => {
-      const savedCredentials = localStorage.getItem('credentials');
+      const savedCredentials = localStorage.getItem('authHeader');
       if (savedCredentials) {
         try {
           await fetchUserProfile();
           navigate('/techflow.io');
         } catch (error) {
           console.error('Auth check error:', error);
-          localStorage.removeItem('credentials');
+          localStorage.removeItem('authHeader');
         }
       }
     };

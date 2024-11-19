@@ -1,33 +1,27 @@
-const auth = async (req, res, next) => {
-    console.log('Auth middleware called');
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader) {
-        console.log('No auth header found');
-        return res.status(401).json({ error: 'No authorization header' });
-    }
-
+const auth = (req, res, next) => {
     try {
+        // Get authorization header
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Basic ')) {
+            return res.status(401).json({ error: 'No authentication token provided' });
+        }
+
+        // Extract and decode credentials
         const base64Credentials = authHeader.split(' ')[1];
-        console.log('Received base64 credentials:', base64Credentials);
-        
-        const credentials = Buffer.from(base64Credentials, 'base64').toString();
-        console.log('Decoded credentials:', credentials);
-        
+        const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
         const [email, password] = credentials.split(':');
-        console.log('Attempting login with:', { email, password });
-        
-        if (email === 'admin@company.com' && password === 'testpass123') {
-            console.log('Login successful');
-            req.user = { id: 1, email: 'admin@company.com' };
+
+        // Verify credentials (replace with your actual verification logic)
+        if (email === 'sarah.chen@techflow.io' && password === 'testpass123') {
+            req.user = { email }; // Attach user info to request
             next();
         } else {
-            console.log('Invalid credentials');
             res.status(401).json({ error: 'Invalid credentials' });
         }
-    } catch (err) {
-        console.error('Auth error:', err);
-        res.status(500).json({ error: 'Server error' });
+    } catch (error) {
+        console.error('Auth middleware error:', error);
+        res.status(401).json({ error: 'Authentication failed' });
     }
 };
 

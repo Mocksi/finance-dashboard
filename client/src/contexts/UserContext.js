@@ -11,20 +11,20 @@ export const UserProvider = ({ children }) => {
     const API_BASE_URL = 'https://finance-dashboard-tfn6.onrender.com/api';
 
     const fetchUserProfile = async () => {
-        const credentials = localStorage.getItem('credentials');
+        const authHeader = localStorage.getItem('authHeader');
         
-        if (!credentials) {
+        if (!authHeader) {
             setLoading(false);
             setUser(null);
             return;
         }
 
         try {
-            console.log('Fetching profile...');
+            console.log('Fetching profile with auth:', authHeader);
             const response = await fetch(`${API_BASE_URL}/account/profile`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Basic ${credentials}`,
+                    'Authorization': authHeader,
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 }
@@ -33,7 +33,7 @@ export const UserProvider = ({ children }) => {
             console.log('Response status:', response.status);
 
             if (response.status === 401) {
-                localStorage.removeItem('credentials');
+                localStorage.removeItem('authHeader');
                 setUser(null);
                 return;
             }
@@ -66,7 +66,7 @@ export const UserProvider = ({ children }) => {
             return userData;
         } catch (error) {
             console.error('Error fetching user profile:', error);
-            localStorage.removeItem('credentials');
+            localStorage.removeItem('authHeader');
             setUser(null);
             throw error;
         } finally {
