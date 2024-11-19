@@ -13,7 +13,7 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-100">
       <Navigation onLogout={handleLogout} />
-      <main className="ml-64">
+      <main className="pl-64">
         {children}
       </main>
     </div>

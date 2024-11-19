@@ -270,7 +270,7 @@ const Invoices = () => {
   }
 
   return (
-    <div className="p-6 ml-64">
+    <div className="p-6">
       {/* Header section */}
       <div className="sm:flex sm:items-center mb-6">
         <div className="sm:flex-auto">

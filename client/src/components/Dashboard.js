@@ -208,7 +208,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="p-6 ml-64">
+    <div className="p-6">
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">Financial Overview</h1>
       
       {/* Summary Cards */}

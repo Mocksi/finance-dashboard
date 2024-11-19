@@ -29,7 +29,7 @@ const Navigation = ({ onLogout }) => {
   const navigate = useNavigate();
   
   const navItems = [
-    { id: '', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'transactions', label: 'Transactions', icon: Receipt },
     { id: 'invoices', label: 'Invoices', icon: FileText },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
@@ -47,24 +47,22 @@ const Navigation = ({ onLogout }) => {
       <div className="p-4 border-b border-gray-700">
         <div className="h-8 flex items-center">
           {user?.company_logo ? (
-            <img 
-              src={user.company_logo} 
-              alt="Company Logo"
-              className="h-8 w-auto max-w-[200px] object-contain"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.style.display = 'none';
-                const parent = e.target.parentElement;
-                const fallback = parent.querySelector('.fallback-text');
-                if (fallback) {
-                  fallback.style.display = 'block';
-                }
-              }}
-            />
+            <>
+              <img 
+                src={user.company_logo} 
+                alt="Company Logo"
+                className="h-8 w-auto max-w-[200px] object-contain hidden"
+                onError={(e) => {
+                  const titleElement = e.target.nextElementSibling;
+                  if (titleElement) {
+                    titleElement.classList.remove('hidden');
+                  }
+                }}
+              />
+              <h1 className="text-xl font-bold hidden">Financy</h1>
+            </>
           ) : (
-            <h1 className="text-xl font-bold fallback-text">
-              Financy
-            </h1>
+            <h1 className="text-xl font-bold">Financy</h1>
           )}
         </div>
       </div>
@@ -74,12 +72,13 @@ const Navigation = ({ onLogout }) => {
           {navItems.map(item => (
             <li key={item.id}>
               <NavLink
-                to={`/${domain}/${item.id}`}
+                to={`/${domain}/${item.id === 'dashboard' ? '' : item.id}`}
                 className={({ isActive }) =>
                   `flex items-center px-4 py-2 text-sm rounded-md hover:bg-gray-700 ${
                     isActive ? 'bg-gray-700 text-white' : 'text-gray-300'
                   }`
                 }
+                end
               >
                 <item.icon className="h-5 w-5 mr-3" />
                 {item.label}
