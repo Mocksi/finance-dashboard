@@ -103,34 +103,62 @@ router.post('/', auth, async (req, res) => {
 });
 
 // PATCH /api/invoices/:id/status
-router.patch('/:id/status', auth, lookupInvoice, validateStatusTransition, async (req, res) => {
+router.patch('/:id/status', auth, lookupInvoice, async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, override, overrideReason } = req.body;
+    const currentStatus = req.invoice.status;
 
-    const result = await pool.query(
-      `UPDATE invoices 
-       SET status = $1,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2::uuid
-       RETURNING *`,
-      [status, id]
-    );
+    // Check transition validity unless override is true
+    if (!override) {
+      const allowedTransitions = {
+        draft: ['sent', 'cancelled'],
+        sent: ['paid', 'overdue', 'cancelled'],
+        paid: ['refunded'],
+        overdue: ['paid', 'cancelled'],
+        cancelled: [],
+        refunded: []
+      };
 
-    // Send notification based on status change
-    switch (status) {
-      case 'sent':
-        // TODO: Send email to client
-        break;
-      case 'paid':
-        // TODO: Update accounting system
-        break;
-      case 'overdue':
-        // TODO: Send reminder email
-        break;
+      if (!allowedTransitions[currentStatus]?.includes(status)) {
+        return res.status(400).json({
+          error: 'Invalid status transition',
+          message: `Cannot transition from ${currentStatus} to ${status}. Allowed transitions are: ${allowedTransitions[currentStatus]?.join(', ')}`
+        });
+      }
     }
 
-    res.json(result.rows[0]);
+    // Begin transaction
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Update invoice status
+      const result = await client.query(
+        `UPDATE invoices 
+         SET status = $1,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $2
+         RETURNING *`,
+        [status, id]
+      );
+
+      // Log the transition
+      await client.query(
+        `INSERT INTO invoice_status_history 
+         (invoice_id, from_status, to_status, changed_by, override_reason)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, currentStatus, status, req.user.email, overrideReason || null]
+      );
+
+      await client.query('COMMIT');
+      res.json(result.rows[0]);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('Error updating invoice status:', error);
     res.status(500).json({ error: 'Failed to update invoice status' });
@@ -167,6 +195,40 @@ router.put('/:id', auth, async (req, res) => {
       error: 'Failed to update invoice',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined 
     });
+  }
+});
+
+// Add new endpoint to get allowed transitions
+router.get('/:id/allowed-transitions', auth, lookupInvoice, (req, res) => {
+  const allowedTransitions = {
+    draft: ['sent', 'cancelled'],
+    sent: ['paid', 'overdue', 'cancelled'],
+    paid: ['refunded'],
+    overdue: ['paid', 'cancelled'],
+    cancelled: [],
+    refunded: []
+  };
+
+  res.json({
+    currentStatus: req.invoice.status,
+    allowedTransitions: allowedTransitions[req.invoice.status] || []
+  });
+});
+
+// Add endpoint to get status history
+router.get('/:id/history', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `SELECT * FROM invoice_status_history 
+       WHERE invoice_id = $1 
+       ORDER BY changed_at DESC`,
+      [id]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching status history:', error);
+    res.status(500).json({ error: 'Failed to fetch status history' });
   }
 });
 
