@@ -20,12 +20,16 @@ export const UserProvider = ({ children }) => {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/account/profile`, {
+            console.log('Fetching profile with credentials:', credentials);
+            
+            const response = await fetch(`${API_BASE_URL}/users/profile`, {
                 headers: {
                     'Authorization': `Basic ${credentials}`,
                     'Content-Type': 'application/json'
                 }
             });
+
+            console.log('Profile response status:', response.status);
 
             if (response.status === 401) {
                 localStorage.removeItem('credentials');
@@ -39,6 +43,7 @@ export const UserProvider = ({ children }) => {
             }
 
             const data = await response.json();
+            console.log('Profile data:', data);
             
             // Transform the data to match our frontend structure
             const userData = {
