@@ -13,6 +13,7 @@ const Transactions = () => {
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [formErrors, setFormErrors] = useState({});
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const newTransaction = {
     id: Date.now(), // Temporary ID for new transactions
@@ -29,7 +30,7 @@ const Transactions = () => {
     const today = new Date().toISOString().split('T')[0];
     setSelectedTransaction({
       id: Date.now(),
-      type: 'expense', // Default to expense
+      type: 'expense',
       date: today,
       description: '',
       category: '',
@@ -37,6 +38,7 @@ const Transactions = () => {
       credit: 0,
       debit: 0
     });
+    setIsEditing(false);
     setIsSlideoutOpen(true);
   };
 
@@ -111,6 +113,7 @@ const Transactions = () => {
       type,
       date: formattedDate
     });
+    setIsEditing(true);
     setIsSlideoutOpen(true);
   };
 
@@ -153,6 +156,39 @@ const Transactions = () => {
     return Object.keys(errors).length === 0;
   };
 
+  const deleteTransaction = async (id, e) => {
+    e.stopPropagation();
+    
+    if (!window.confirm('Are you sure you want to delete this transaction?')) {
+      return;
+    }
+
+    try {
+      const authHeader = localStorage.getItem('authHeader');
+      if (!authHeader) {
+        navigate('/login', { replace: true });
+        return;
+      }
+
+      const response = await fetch(`https://finance-dashboard-tfn6.onrender.com/api/transactions/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete transaction');
+      }
+
+      setTransactions(prev => prev.filter(t => t.id !== id));
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      setError('Failed to delete transaction');
+    }
+  };
+
   const saveTransaction = async () => {
     if (!validateForm()) return;
 
@@ -169,8 +205,12 @@ const Transactions = () => {
         debit: selectedTransaction.type === 'expense' ? Number(selectedTransaction.debit) : 0
       };
 
-      const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/transactions', {
-        method: 'POST',
+      const url = isEditing 
+        ? `https://finance-dashboard-tfn6.onrender.com/api/transactions/${selectedTransaction.id}`
+        : 'https://finance-dashboard-tfn6.onrender.com/api/transactions';
+
+      const response = await fetch(url, {
+        method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Authorization': authHeader,
           'Content-Type': 'application/json'
@@ -184,7 +224,15 @@ const Transactions = () => {
       }
 
       const updatedTransaction = await response.json();
-      setTransactions(prev => [...prev, updatedTransaction]);
+      
+      setTransactions(prev => {
+        if (isEditing) {
+          return prev.map(t => t.id === updatedTransaction.id ? updatedTransaction : t);
+        } else {
+          return [...prev, updatedTransaction];
+        }
+      });
+      
       closeSlideout();
     } catch (error) {
       console.error('Error saving transaction:', error);
@@ -297,6 +345,12 @@ const Transactions = () => {
               >
                 Amount {sortConfig.key === 'amount' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
               </th>
+              <th 
+                scope="col" 
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+              >
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -322,6 +376,14 @@ const Transactions = () => {
                   transaction.credit > 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
                   ${Math.abs(Number(transaction.credit) || Number(transaction.debit)).toLocaleString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                  <button
+                    onClick={(e) => deleteTransaction(transaction.id, e)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
