@@ -15,7 +15,7 @@ import {
 import { Line, Pie } from 'react-chartjs-2';
 import * as d3 from 'd3';
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
-import { UserContext } from '../context/UserContext';
+import { UserContext } from '../contexts/UserContext';
 
 // Register ChartJS components
 ChartJS.register(
