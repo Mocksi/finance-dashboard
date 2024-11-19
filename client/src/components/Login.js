@@ -13,15 +13,13 @@ const Login = () => {
   const VALID_EMAIL = 'admin@company.com';
   const VALID_PASSWORD = 'testpass123';
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Check against hardcoded credentials
     if (credentials.email === VALID_EMAIL && credentials.password === VALID_PASSWORD) {
-      // Store credentials in base64 format
       const base64Credentials = btoa(`${credentials.email}:${credentials.password}`);
       localStorage.setItem('credentials', base64Credentials);
-      navigate('/dashboard');
+      navigate('/techflow.io');
     } else {
       setError('Invalid credentials. Try admin@company.com / testpass123');
     }

@@ -41,62 +41,9 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/:domain/*" element={<CompanyRoutes />} />
           
-          <Route
-            path="/transactions"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Transactions />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/invoices"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Invoices />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/reports"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Reports />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Settings />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="/" element={<Navigate to="/login" />} />
         </Routes>
       </UserProvider>
     </BrowserRouter>

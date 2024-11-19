@@ -24,6 +24,7 @@ const getInitialsColor = (name) => {
 
 const Navigation = ({ onLogout }) => {
   const { user } = useContext(UserContext);
+  const domain = user?.company_domain;
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -34,11 +35,11 @@ const Navigation = ({ onLogout }) => {
     { id: '/reports', label: 'Reports', icon: BarChart3 },
   ];
 
-  // Update document title
+  // Update document title to always use "Financy"
   React.useEffect(() => {
     const currentPage = navItems.find(item => item.id === location.pathname)?.label || '';
-    document.title = `${user?.company_name || 'Financy'} - ${currentPage}`;
-  }, [location, user]);
+    document.title = `Financy - ${currentPage}`;
+  }, [location]);
 
   return (
     <div className="fixed inset-y-0 left-0 w-64 bg-gray-800 text-white flex flex-col z-10">
@@ -46,7 +47,7 @@ const Navigation = ({ onLogout }) => {
         {user?.company_logo ? (
           <img 
             src={user.company_logo} 
-            alt={user.company_name || 'Company Logo'}
+            alt="Company Logo"
             className="h-8 w-auto max-w-[200px] object-contain"
             onError={(e) => {
               e.target.onerror = null;
@@ -54,13 +55,11 @@ const Navigation = ({ onLogout }) => {
               e.target.nextElementSibling.style.display = 'block';
             }}
           />
-        ) : null}
-        <h1 
-          className="text-xl font-bold"
-          style={{ display: user?.company_logo ? 'none' : 'block' }}
-        >
-          {user?.company_name || 'Financy'}
-        </h1>
+        ) : (
+          <h1 className="text-xl font-bold">
+            Financy
+          </h1>
+        )}
       </div>
 
       <nav className="flex-1 p-4">
@@ -68,7 +67,7 @@ const Navigation = ({ onLogout }) => {
           {navItems.map(item => (
             <li key={item.id}>
               <NavLink
-                to={item.id}
+                to={`/${domain}${item.id}`}
                 className={({ isActive }) =>
                   `flex items-center px-4 py-2 text-sm rounded-md hover:bg-gray-700 ${
                     isActive ? 'bg-gray-700 text-white' : 'text-gray-300'
