@@ -26,32 +26,17 @@ const Settings = () => {
   // Add new state for team members
   const [teamMembers, setTeamMembers] = useState([]);
   
-  // Update form values when user data is loaded
-  useEffect(() => {
-    if (user) {
-      setCompanyForm({
-        name: user.company_name || '',
-        domain: user.company_domain || '',
-        logo_url: user.company_logo || ''
-      });
+  // Add API base URL
+  const API_BASE_URL = 'https://finance-dashboard-tfn6.onrender.com/api';
 
-      setUserForm({
-        first_name: user.first_name || '',
-        last_name: user.last_name || '',
-        email: user.email || '',
-        role: user.role || '',
-        avatar_url: user.avatar_url || ''
-      });
-    }
-  }, [user]);
-
-  // Add fetch for team members
+  // Update team members fetch
   useEffect(() => {
     const fetchTeamMembers = async () => {
       try {
-        const response = await fetch('/api/account/team', {
+        const response = await fetch(`${API_BASE_URL}/account/team`, {
           headers: {
-            'Authorization': `Basic ${localStorage.getItem('credentials')}`
+            'Authorization': `Basic ${localStorage.getItem('credentials')}`,
+            'Content-Type': 'application/json'
           }
         });
         if (response.ok) {
@@ -66,11 +51,12 @@ const Settings = () => {
     fetchTeamMembers();
   }, []);
 
+  // Update company submit handler
   const handleCompanySubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch('/api/account/company', {
+      const response = await fetch(`${API_BASE_URL}/account/company`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -92,12 +78,13 @@ const Settings = () => {
     }
   };
 
+  // Update user submit handler
   const handleUserSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       const { email, ...updateData } = userForm; // Exclude email from the update
-      const response = await fetch('/api/account/profile', {
+      const response = await fetch(`${API_BASE_URL}/account/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -118,6 +105,25 @@ const Settings = () => {
       setLoading(false);
     }
   };
+
+  // Update form values when user data is loaded
+  useEffect(() => {
+    if (user) {
+      setCompanyForm({
+        name: user.company_name || '',
+        domain: user.company_domain || '',
+        logo_url: user.company_logo || ''
+      });
+
+      setUserForm({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+        role: user.role || '',
+        avatar_url: user.avatar_url || ''
+      });
+    }
+  }, [user]);
 
   if (!user) {
     return (

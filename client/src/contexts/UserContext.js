@@ -8,6 +8,8 @@ export const UserProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    const API_BASE_URL = 'https://finance-dashboard-tfn6.onrender.com/api';
+
     const fetchUserProfile = async () => {
         try {
             const credentials = localStorage.getItem('credentials');
@@ -18,7 +20,7 @@ export const UserProvider = ({ children }) => {
 
             console.log('Fetching profile...');
 
-            const response = await fetch('/api/account/profile', {
+            const response = await fetch(`${API_BASE_URL}/account/profile`, {
                 headers: {
                     'Authorization': `Basic ${credentials}`,
                     'Accept': 'application/json'

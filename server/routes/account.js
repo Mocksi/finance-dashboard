@@ -34,7 +34,7 @@ router.get('/profile', auth, async (req, res) => {
     }
 });
 
-// Get team members
+// Add team members endpoint
 router.get('/team', auth, async (req, res) => {
     try {
         const result = await pool.query(`
@@ -42,6 +42,7 @@ router.get('/team', auth, async (req, res) => {
             FROM team_members tm
             JOIN users u ON u.company_id = tm.company_id
             WHERE u.email = $1
+            ORDER BY tm.role, tm.first_name, tm.last_name
         `, [req.user.email]);
 
         res.json(result.rows);
