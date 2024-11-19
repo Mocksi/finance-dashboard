@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { UserContext } from '../context/UserContext';
+import { UserContext } from '../contexts/UserContext';
 
 const Transactions = () => {
   const navigate = useNavigate();
