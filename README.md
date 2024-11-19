@@ -1,70 +1,109 @@
-# Getting Started with Create React App
+# Finance Dashboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern financial management dashboard built with React, designed primarily for testing [Mocksi](https://mocksi.ai) - an AI-powered API mocking and testing platform.
+
+## Overview
+
+This application demonstrates common financial management features including:
+- Invoice management with status workflows
+- Transaction tracking and categorization
+- Financial reporting and analytics
+- Team management and role-based access control
+- Company profile and user settings
+
+## Tech Stack
+
+- Frontend: React with Tailwind CSS
+- Backend: Node.js/Express
+- Database: PostgreSQL
+- Authentication: JWT-based auth
+- Deployment: Render.com
+
+## Getting Started
+
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn
+- PostgreSQL database
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/finance-dashboard.git
+   cd finance-dashboard
+   ```
+
+2. Install dependencies:
+   ```bash
+   # Install frontend dependencies
+   cd client
+   npm install
+
+   # Install backend dependencies
+   cd ../server
+   npm install
+   ```
+
+3. Set up environment variables:
+   ```bash
+   # In server directory, create .env file
+   DATABASE_URL=your_postgres_connection_string
+   JWT_SECRET=your_jwt_secret
+   NODE_ENV=development
+   ```
+
+4. Start the development servers:
+   ```bash
+   # Start backend (from server directory)
+   npm run dev
+
+   # Start frontend (from client directory)
+   npm start
+   ```
+
+## Testing with Mocksi
+
+This application is designed to work seamlessly with Mocksi for API testing. Key integration points include:
+
+- RESTful API endpoints for financial operations
+- JWT-based authentication flow
+- Role-based access control
+- Error handling and status codes
+- Data validation and transformation
+
+To use with Mocksi:
+1. Import the API collection
+2. Configure environment variables
+3. Run automated tests through the Mocksi platform
 
 ## Available Scripts
 
-In the project directory, you can run:
+### Frontend (in `client` directory)
+- `npm start`: Run development server
+- `npm test`: Run test suite
+- `npm run build`: Build for production
+- `npm run lint`: Run linter
 
-### `npm start`
+### Backend (in `server` directory)
+- `npm run dev`: Run development server with nodemon
+- `npm start`: Run production server
+- `npm test`: Run test suite
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Contributing
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### `npm test`
+## License
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### `npm run build`
+## Acknowledgments
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Built with [Create React App](https://github.com/facebook/create-react-app)
+- Styled with [Tailwind CSS](https://tailwindcss.com)
+- Icons by [Lucide](https://lucide.dev)

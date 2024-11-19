@@ -25,6 +25,8 @@ const Settings = () => {
     avatar_url: ''
   });
 
+  const [teamMembers, setTeamMembers] = useState([]);
+
   // Initialize forms with user data when it loads
   useEffect(() => {
     if (user) {
@@ -43,6 +45,39 @@ const Settings = () => {
       });
     }
   }, [user]);
+
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      try {
+        const authHeader = localStorage.getItem('authHeader');
+        if (!authHeader) {
+          navigate('/login', { replace: true });
+          return;
+        }
+
+        const response = await fetch('https://finance-dashboard-tfn6.onrender.com/api/account/team', {
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch team members');
+        }
+
+        const data = await response.json();
+        setTeamMembers(data);
+      } catch (error) {
+        console.error('Error fetching team:', error);
+        setError(error.message);
+      }
+    };
+
+    if (user) {
+      fetchTeamMembers();
+    }
+  }, [user, navigate]);
 
   const handleCompanySubmit = async (e) => {
     e.preventDefault();
@@ -256,6 +291,69 @@ const Settings = () => {
                 Save Personal Settings
               </button>
             </form>
+          </div>
+        </div>
+
+        {/* Team Members */}
+        <div className="bg-white shadow rounded-lg mt-6">
+          <div className="p-4 sm:p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Team Members</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {teamMembers.map((member) => (
+                    <tr key={member.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {member.avatar_url ? (
+                            <img className="h-8 w-8 rounded-full" src={member.avatar_url} alt="" />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-sm font-medium text-gray-500">
+                                {`${member.first_name?.[0] || ''}${member.last_name?.[0] || ''}`}
+                              </span>
+                            </div>
+                          )}
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {`${member.first_name || ''} ${member.last_name || ''}`}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {member.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {member.role}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                          ${member.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {member.status || 'active'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

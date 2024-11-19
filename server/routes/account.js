@@ -119,24 +119,63 @@ router.put('/company', auth, async (req, res) => {
 // Update profile endpoint
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { first_name, last_name, avatar_url } = req.body;
+    const { first_name, last_name, role, avatar_url } = req.body;
     
+    // Log incoming data for debugging
+    console.log('Updating profile for:', req.user.email, 'with data:', req.body);
+
     const result = await pool.query(`
       UPDATE users 
       SET 
-        first_name = COALESCE($1, first_name),
-        last_name = COALESCE($2, last_name),
-        avatar_url = COALESCE($3, avatar_url),
+        first_name = $1,
+        last_name = $2,
+        role = $3,
+        avatar_url = $4,
         updated_at = CURRENT_TIMESTAMP
-      WHERE email = $4
-      RETURNING id, email, first_name, last_name, role, avatar_url, company_id
-    `, [first_name, last_name, avatar_url, req.user.email]);
+      WHERE email = $5
+      RETURNING 
+        id,
+        email,
+        first_name,
+        last_name,
+        role,
+        avatar_url,
+        company_id
+    `, [
+      first_name || null,
+      last_name || null,
+      role || null,
+      avatar_url || null,
+      req.user.email
+    ]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(result.rows[0]);
+    // Get company info for the complete profile
+    const companyResult = await pool.query(`
+      SELECT 
+        c.name as company_name,
+        c.domain as company_domain,
+        c.logo_url as company_logo
+      FROM companies c
+      JOIN users u ON u.company_id = c.id
+      WHERE u.email = $1
+    `, [req.user.email]);
+
+    // Combine user and company data
+    const userData = {
+      ...result.rows[0],
+      company_name: companyResult.rows[0]?.company_name,
+      company_domain: companyResult.rows[0]?.company_domain,
+      company_logo: companyResult.rows[0]?.logo_url
+    };
+
+    // Log the response for debugging
+    console.log('Profile update successful:', userData);
+
+    res.json(userData);
   } catch (error) {
     console.error('Error updating profile:', error);
     res.status(500).json({ 
