@@ -98,7 +98,7 @@ const Dashboard = () => {
 
     console.log('December Revenue:', 
       allMonths.map(month => 
-        dashboardData.monthlyMetrics.find(m => m.month === month)?.revenue || 0
+        dashboardData.monthlyMetrics.find(m => m.month.startsWith(month.slice(0, 7)))?.revenue || 0
       ).find((_, i) => allMonths[i].startsWith('2024-12'))
     );
 
