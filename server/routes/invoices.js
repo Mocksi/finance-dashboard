@@ -113,46 +113,37 @@ router.patch('/:id/status', auth, lookupInvoice, async (req, res) => {
     const { status, override, overrideReason } = req.body;
     const currentStatus = req.invoice.status;
 
-    // Check transition validity unless override is true
-    if (!override) {
-      const allowedTransitions = {
-        draft: ['sent', 'cancelled'],
-        sent: ['paid', 'overdue', 'cancelled'],
-        paid: ['refunded'],
-        overdue: ['paid', 'cancelled'],
-        cancelled: [],
-        refunded: []
-      };
-
-      if (!allowedTransitions[currentStatus]?.includes(status)) {
-        return res.status(400).json({
-          error: 'Invalid status transition',
-          message: `Cannot transition from ${currentStatus} to ${status}. Allowed transitions are: ${allowedTransitions[currentStatus]?.join(', ')}`
-        });
-      }
-    }
-
     // If transitioning to paid status, create a transaction
     if (status === 'paid' && currentStatus !== 'paid') {
-      await client.query(
-        `INSERT INTO transactions (date, description, credit, reference_id, type)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          new Date(),
-          `Payment received for Invoice #${id.slice(0, 8)}`,
-          req.invoice.amount,
-          id,
-          'invoice'
-        ]
-      );
+      try {
+        await client.query(
+          `INSERT INTO transactions (date, description, credit, reference_id, type)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            new Date(),
+            `Payment received for Invoice #${id.slice(0, 8)}`,
+            req.invoice.amount,
+            id,
+            'invoice'
+          ]
+        );
+      } catch (transactionError) {
+        console.error('Error creating transaction:', transactionError);
+        throw new Error(`Failed to create transaction: ${transactionError.message}`);
+      }
     }
 
     // If cancelling a paid invoice, remove the transaction
     if (status === 'cancelled' && currentStatus === 'paid') {
-      await client.query(
-        'DELETE FROM transactions WHERE reference_id = $1 AND type = $2',
-        [id, 'invoice']
-      );
+      try {
+        await client.query(
+          'DELETE FROM transactions WHERE reference_id = $1 AND type = $2',
+          [id, 'invoice']
+        );
+      } catch (deleteError) {
+        console.error('Error deleting transaction:', deleteError);
+        throw new Error(`Failed to delete transaction: ${deleteError.message}`);
+      }
     }
 
     // Update invoice status
@@ -178,7 +169,10 @@ router.patch('/:id/status', auth, lookupInvoice, async (req, res) => {
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error updating invoice status:', error);
-    res.status(500).json({ error: 'Failed to update invoice status' });
+    res.status(500).json({ 
+      error: 'Failed to update invoice status',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   } finally {
     client.release();
   }
