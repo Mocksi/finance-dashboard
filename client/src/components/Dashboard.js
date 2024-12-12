@@ -100,14 +100,9 @@ const Dashboard = () => {
         {
           label: 'Revenue',
           data: allMonths.map((month, index) => {
+            if (index === 0) return 0;  // Handle January specially
             const prevMonthData = dashboardData.monthlyMetrics?.find(m => m.month === allMonths[index - 1]);
-            const monthDate = new Date(month);
-            const nextMonth = new Date(monthDate);
-            nextMonth.setMonth(nextMonth.getMonth() + 1);
-            const now = new Date();
-            return nextMonth <= now 
-              ? prevMonthData?.revenue || 0
-              : null;
+            return prevMonthData?.revenue || 0;
           }),
           borderColor: '#60A5FA',
           backgroundColor: 'transparent',
@@ -130,14 +125,9 @@ const Dashboard = () => {
         {
           label: 'Expenses',
           data: allMonths.map((month, index) => {
+            if (index === 0) return 0;  // Handle January specially
             const prevMonthData = dashboardData.monthlyMetrics?.find(m => m.month === allMonths[index - 1]);
-            const monthDate = new Date(month);
-            const nextMonth = new Date(monthDate);
-            nextMonth.setMonth(nextMonth.getMonth() + 1);
-            const now = new Date();
-            return nextMonth <= now 
-              ? prevMonthData?.expenses || 0
-              : null;
+            return prevMonthData?.expenses || 0;
           }),
           borderColor: '#F87171',
           backgroundColor: 'transparent',
