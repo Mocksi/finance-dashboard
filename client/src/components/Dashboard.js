@@ -86,6 +86,10 @@ const Dashboard = () => {
       return { labels: [], datasets: [] };
     }
 
+    console.log('December Data:', 
+      dashboardData.monthlyMetrics.find(m => m.month.startsWith('2024-12'))
+    );
+
     // Create array of all months including future months from projections
     const allMonths = [...new Set([
       ...dashboardData.monthlyMetrics.map(m => m.month),
