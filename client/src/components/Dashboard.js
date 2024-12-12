@@ -101,8 +101,9 @@ const Dashboard = () => {
           label: 'Revenue',
           data: allMonths.map(month => {
             const monthDate = new Date(month);
+            const nextMonth = new Date(monthDate.setMonth(monthDate.getMonth() + 1));
             const now = new Date();
-            return monthDate <= now 
+            return nextMonth <= now 
               ? dashboardData.monthlyMetrics?.find(m => m.month === month)?.revenue || 0
               : null;
           }),
@@ -128,8 +129,9 @@ const Dashboard = () => {
           label: 'Expenses',
           data: allMonths.map(month => {
             const monthDate = new Date(month);
+            const nextMonth = new Date(monthDate.setMonth(monthDate.getMonth() + 1));
             const now = new Date();
-            return monthDate <= now 
+            return nextMonth <= now 
               ? dashboardData.monthlyMetrics?.find(m => m.month === month)?.expenses || 0
               : null;
           }),
