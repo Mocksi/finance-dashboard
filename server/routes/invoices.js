@@ -117,14 +117,16 @@ router.patch('/:id/status', auth, lookupInvoice, async (req, res) => {
     if (status === 'paid' && currentStatus !== 'paid') {
       try {
         await client.query(
-          `INSERT INTO transactions (date, description, credit, reference_id, type)
-           VALUES ($1, $2, $3, $4, $5)`,
+          `INSERT INTO transactions 
+            (date, description, credit, reference_id, type, category)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
           [
             new Date(),
             `Payment received for Invoice #${id.slice(0, 8)}`,
             req.invoice.amount,
             id,
-            'invoice'
+            'invoice',
+            'invoice_payment'
           ]
         );
       } catch (transactionError) {
