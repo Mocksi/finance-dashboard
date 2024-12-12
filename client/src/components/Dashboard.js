@@ -99,9 +99,16 @@ const Dashboard = () => {
       datasets: [
         {
           label: 'Revenue',
-          data: allMonths.map(month => 
-            dashboardData.monthlyMetrics.find(m => m.month === month)?.revenue || 0
-          ),
+          data: allMonths.map(month => {
+            console.log('Month comparison:', {
+              monthFromAllMonths: month,
+              allMonthsArray: allMonths,
+              metricsDecember: dashboardData.monthlyMetrics[11],
+              foundMetric: dashboardData.monthlyMetrics.find(m => m.month === month),
+              exactMatch: month === dashboardData.monthlyMetrics[11].month
+            });
+            return dashboardData.monthlyMetrics?.find(m => m.month === month)?.revenue || 0;
+          }),
           borderColor: '#60A5FA',
           backgroundColor: 'transparent',
           borderWidth: 2
