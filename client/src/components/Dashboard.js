@@ -83,37 +83,34 @@ const Dashboard = () => {
   // Update the monthlyData calculation
   const monthlyData = useMemo(() => {
     if (!dashboardData?.monthlyMetrics?.length) {
-      return {
-        labels: [],
-        datasets: []
-      };
+      return { labels: [], datasets: [] };
     }
 
-    const now = new Date();
-    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
-    const months = dashboardData.monthlyMetrics.map(m => 
-      new Date(m.month).toLocaleString('default', { month: 'short' })
-    );
+    // Sort all dates to ensure proper order
+    const allMonths = [...dashboardData.monthlyMetrics]
+      .sort((a, b) => new Date(a.month) - new Date(b.month));
 
     return {
-      labels: months,
+      labels: allMonths.map(m => 
+        new Date(m.month).toLocaleString('default', { month: 'short' })
+      ),
       datasets: [
         {
           label: 'Revenue',
-          data: dashboardData.monthlyMetrics.map(m => m.revenue || 0),
+          data: allMonths.map(m => m.revenue || 0),
           borderColor: '#60A5FA',
           backgroundColor: 'transparent',
           borderWidth: 2
         },
         {
           label: 'Projected Revenue',
-          data: dashboardData.monthlyMetrics.map(m => {
+          data: allMonths.map(m => {
             const monthDate = new Date(m.month);
+            const now = new Date();
             // Only show projections for current month and future
-            return monthDate >= currentMonth 
+            return monthDate >= now 
               ? dashboardData.invoiceProjections?.find(p => 
-                  new Date(p.month).getTime() === monthDate.getTime()
+                  new Date(p.month).getMonth() === monthDate.getMonth()
                 )?.projected_revenue || 0
               : null;
           }),
@@ -124,7 +121,7 @@ const Dashboard = () => {
         },
         {
           label: 'Expenses',
-          data: dashboardData.monthlyMetrics.map(m => m.expenses || 0),
+          data: allMonths.map(m => m.expenses || 0),
           borderColor: '#F87171',
           backgroundColor: 'transparent',
           borderWidth: 2
