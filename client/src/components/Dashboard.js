@@ -86,27 +86,16 @@ const Dashboard = () => {
       return { labels: [], datasets: [] };
     }
 
-    console.log('December Data:', 
-      dashboardData.monthlyMetrics.find(m => m.month.startsWith('2024-12'))
-    );
+    console.log('December Data:', {
+      metrics: dashboardData.monthlyMetrics.find(m => m.month.startsWith('2024-12')),
+      allMonths: allMonths.filter(m => m.startsWith('2024-12'))
+    });
 
     // Create array of all months including future months from projections
     const allMonths = [...new Set([
       ...dashboardData.monthlyMetrics.map(m => m.month),
       ...(dashboardData.invoiceProjections || []).map(p => p.month)
     ])].sort();
-
-    console.log('December Revenue:', 
-      allMonths.map(month => 
-        dashboardData.monthlyMetrics.find(m => m.month.startsWith(month.slice(0, 7)))?.revenue || 0
-      ).find((_, i) => allMonths[i].startsWith('2024-12'))
-    );
-
-    console.log('Month Comparison:', {
-      month: '2024-12-01T00:00:00.000Z',
-      allMonths: allMonths,
-      match: dashboardData.monthlyMetrics.find(m => m.month === '2024-12-01T00:00:00.000Z')
-    });
 
     return {
       labels: allMonths.map(m => 
@@ -147,7 +136,7 @@ const Dashboard = () => {
         }
       ]
     };
-  }, [dashboardData]);
+  }, [dashboardData?.monthlyMetrics]);
 
   // D3 Chart Rendering
   useEffect(() => {
