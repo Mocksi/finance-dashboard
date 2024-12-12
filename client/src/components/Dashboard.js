@@ -115,7 +115,7 @@ const Dashboard = () => {
         {
           label: 'Revenue',
           data: allMonths.map(month => 
-            dashboardData.monthlyMetrics.find(m => m.month.startsWith(month.slice(0, 7)))?.revenue || 0
+            dashboardData.monthlyMetrics.find(m => m.month === month)?.revenue || 0
           ),
           borderColor: '#60A5FA',
           backgroundColor: 'transparent',
@@ -138,7 +138,7 @@ const Dashboard = () => {
         {
           label: 'Expenses',
           data: allMonths.map(month => 
-            dashboardData.monthlyMetrics.find(m => m.month.startsWith(month.slice(0, 7)))?.expenses || 0
+            dashboardData.monthlyMetrics.find(m => m.month === month)?.expenses || 0
           ),
           borderColor: '#F87171',
           backgroundColor: 'transparent',
