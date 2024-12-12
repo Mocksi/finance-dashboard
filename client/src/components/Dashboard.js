@@ -96,6 +96,12 @@ const Dashboard = () => {
       ...(dashboardData.invoiceProjections || []).map(p => p.month)
     ])].sort();
 
+    console.log('December Revenue:', 
+      allMonths.map(month => 
+        dashboardData.monthlyMetrics.find(m => m.month === month)?.revenue || 0
+      ).find((_, i) => allMonths[i].startsWith('2024-12'))
+    );
+
     return {
       labels: allMonths.map(m => 
         new Date(m).toLocaleString('default', { month: 'short' })
