@@ -86,32 +86,33 @@ const Dashboard = () => {
       return { labels: [], datasets: [] };
     }
 
-    // Sort all dates to ensure proper order
-    const allMonths = [...dashboardData.monthlyMetrics]
-      .sort((a, b) => new Date(a.month) - new Date(b.month));
+    // Create array of all months including future months from projections
+    const allMonths = [...new Set([
+      ...dashboardData.monthlyMetrics.map(m => m.month),
+      ...(dashboardData.invoiceProjections || []).map(p => p.month)
+    ])].sort();
 
     return {
       labels: allMonths.map(m => 
-        new Date(m.month).toLocaleString('default', { month: 'short' })
+        new Date(m).toLocaleString('default', { month: 'short' })
       ),
       datasets: [
         {
           label: 'Revenue',
-          data: allMonths.map(m => m.revenue || 0),
+          data: allMonths.map(month => 
+            dashboardData.monthlyMetrics.find(m => m.month === month)?.revenue || 0
+          ),
           borderColor: '#60A5FA',
           backgroundColor: 'transparent',
           borderWidth: 2
         },
         {
           label: 'Projected Revenue',
-          data: allMonths.map(m => {
-            const monthDate = new Date(m.month);
+          data: allMonths.map(month => {
+            const monthDate = new Date(month);
             const now = new Date();
-            // Only show projections for current month and future
             return monthDate >= now 
-              ? dashboardData.invoiceProjections?.find(p => 
-                  new Date(p.month).getMonth() === monthDate.getMonth()
-                )?.projected_revenue || 0
+              ? dashboardData.invoiceProjections?.find(p => p.month === month)?.projected_revenue || 0
               : null;
           }),
           borderColor: '#93C5FD',
@@ -121,7 +122,9 @@ const Dashboard = () => {
         },
         {
           label: 'Expenses',
-          data: allMonths.map(m => m.expenses || 0),
+          data: allMonths.map(month => 
+            dashboardData.monthlyMetrics.find(m => m.month === month)?.expenses || 0
+          ),
           borderColor: '#F87171',
           backgroundColor: 'transparent',
           borderWidth: 2
