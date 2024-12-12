@@ -102,8 +102,10 @@ const Dashboard = () => {
           data: allMonths.map((month, index) => {
             const prevMonthData = dashboardData.monthlyMetrics?.find(m => m.month === allMonths[index - 1]);
             const monthDate = new Date(month);
+            const nextMonth = new Date(monthDate);
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
             const now = new Date();
-            return monthDate <= now 
+            return nextMonth <= now 
               ? prevMonthData?.revenue || 0
               : null;
           }),
@@ -130,8 +132,10 @@ const Dashboard = () => {
           data: allMonths.map((month, index) => {
             const prevMonthData = dashboardData.monthlyMetrics?.find(m => m.month === allMonths[index - 1]);
             const monthDate = new Date(month);
+            const nextMonth = new Date(monthDate);
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
             const now = new Date();
-            return monthDate <= now 
+            return nextMonth <= now 
               ? prevMonthData?.expenses || 0
               : null;
           }),
