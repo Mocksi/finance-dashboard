@@ -102,9 +102,10 @@ const Dashboard = () => {
       ).find((_, i) => allMonths[i].startsWith('2024-12'))
     );
 
-    console.log('December Data:', {
-      metrics: dashboardData.monthlyMetrics.find(m => m.month.startsWith('2024-12')),
-      allMonths: allMonths.filter(m => m.startsWith('2024-12'))
+    console.log('Month Comparison:', {
+      month: '2024-12-01T00:00:00.000Z',
+      allMonths: allMonths,
+      match: dashboardData.monthlyMetrics.find(m => m.month === '2024-12-01T00:00:00.000Z')
     });
 
     return {
