@@ -86,21 +86,26 @@ const Dashboard = () => {
       return { labels: [], datasets: [] };
     }
 
-    console.log('December Data:', {
-      metrics: dashboardData.monthlyMetrics.find(m => m.month.startsWith('2024-12')),
-      allMonths: allMonths.filter(m => m.startsWith('2024-12'))
-    });
-
-    console.log('December Metrics:', {
-      metrics: dashboardData.monthlyMetrics.find(m => m.month === '2024-12-01T00:00:00.000Z'),
-      month: '2024-12-01T00:00:00.000Z'
-    });
+    console.log('December Data:', 
+      dashboardData.monthlyMetrics.find(m => m.month.startsWith('2024-12'))
+    );
 
     // Create array of all months including future months from projections
     const allMonths = [...new Set([
       ...dashboardData.monthlyMetrics.map(m => m.month),
       ...(dashboardData.invoiceProjections || []).map(p => p.month)
     ])].sort();
+
+    console.log('December Revenue:', 
+      allMonths.map(month => 
+        dashboardData.monthlyMetrics.find(m => m.month.startsWith(month.slice(0, 7)))?.revenue || 0
+      ).find((_, i) => allMonths[i].startsWith('2024-12'))
+    );
+
+    console.log('December Data:', {
+      metrics: dashboardData.monthlyMetrics.find(m => m.month.startsWith('2024-12')),
+      allMonths: allMonths.filter(m => m.startsWith('2024-12'))
+    });
 
     return {
       labels: allMonths.map(m => 
@@ -109,10 +114,9 @@ const Dashboard = () => {
       datasets: [
         {
           label: 'Revenue',
-          data: allMonths.map(month => {
-            const metricData = dashboardData.monthlyMetrics.find(m => m.month === month);
-            return metricData ? Number(metricData.revenue) : 0;
-          }),
+          data: allMonths.map(month => 
+            dashboardData.monthlyMetrics.find(m => m.month.startsWith(month.slice(0, 7)))?.revenue || 0
+          ),
           borderColor: '#60A5FA',
           backgroundColor: 'transparent',
           borderWidth: 2
@@ -122,7 +126,7 @@ const Dashboard = () => {
           data: allMonths.map(month => {
             const monthDate = new Date(month);
             const now = new Date();
-            return monthDate > new Date(now.getFullYear(), now.getMonth(), 1) 
+            return monthDate >= now 
               ? dashboardData.invoiceProjections?.find(p => p.month === month)?.projected_revenue || 0
               : null;
           }),
@@ -142,7 +146,7 @@ const Dashboard = () => {
         }
       ]
     };
-  }, [dashboardData?.monthlyMetrics]);  // Only recalculate when monthlyMetrics changes
+  }, [dashboardData]);
 
   // D3 Chart Rendering
   useEffect(() => {
