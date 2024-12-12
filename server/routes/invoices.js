@@ -104,7 +104,11 @@ router.post('/', auth, async (req, res) => {
 
 // PATCH /api/invoices/:id/status
 router.patch('/:id/status', auth, lookupInvoice, async (req, res) => {
+  const client = await pool.connect();
+  
   try {
+    await client.query('BEGIN');
+    
     const { id } = req.params;
     const { status, override, overrideReason } = req.body;
     const currentStatus = req.invoice.status;
@@ -128,40 +132,55 @@ router.patch('/:id/status', auth, lookupInvoice, async (req, res) => {
       }
     }
 
-    // Begin transaction
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      // Update invoice status
-      const result = await client.query(
-        `UPDATE invoices 
-         SET status = $1,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $2
-         RETURNING *`,
-        [status, id]
-      );
-
-      // Log the transition
+    // If transitioning to paid status, create a transaction
+    if (status === 'paid' && currentStatus !== 'paid') {
       await client.query(
-        `INSERT INTO invoice_status_history 
-         (invoice_id, from_status, to_status, changed_by, override_reason)
+        `INSERT INTO transactions (date, description, credit, reference_id, type)
          VALUES ($1, $2, $3, $4, $5)`,
-        [id, currentStatus, status, req.user.email, overrideReason || null]
+        [
+          new Date(),
+          `Payment received for Invoice #${id.slice(0, 8)}`,
+          req.invoice.amount,
+          id,
+          'invoice'
+        ]
       );
-
-      await client.query('COMMIT');
-      res.json(result.rows[0]);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
     }
+
+    // If cancelling a paid invoice, remove the transaction
+    if (status === 'cancelled' && currentStatus === 'paid') {
+      await client.query(
+        'DELETE FROM transactions WHERE reference_id = $1 AND type = $2',
+        [id, 'invoice']
+      );
+    }
+
+    // Update invoice status
+    const result = await client.query(
+      `UPDATE invoices 
+       SET status = $1,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING *`,
+      [status, id]
+    );
+
+    // Log the transition
+    await client.query(
+      `INSERT INTO invoice_status_history 
+       (invoice_id, from_status, to_status, changed_by, override_reason)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [id, currentStatus, status, req.user.email, overrideReason || null]
+    );
+
+    await client.query('COMMIT');
+    res.json(result.rows[0]);
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Error updating invoice status:', error);
     res.status(500).json({ error: 'Failed to update invoice status' });
+  } finally {
+    client.release();
   }
 });
 
