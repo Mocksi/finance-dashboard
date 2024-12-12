@@ -12,7 +12,7 @@ router.get('/dashboard-data', auth, async (req, res) => {
         COALESCE(SUM(debit), 0) as expenses
       FROM transactions
       WHERE date >= NOW() - INTERVAL '11 months'
-        AND date <= NOW() + INTERVAL '3 months'
+        AND date < NOW() + INTERVAL '3 months'
       GROUP BY DATE_TRUNC('month', date)
       ORDER BY month ASC`;
 
@@ -40,8 +40,8 @@ router.get('/dashboard-data', auth, async (req, res) => {
         COALESCE(SUM(amount), 0) as projected_revenue
       FROM invoices
       WHERE status IN ('draft', 'sent', 'overdue')
-        AND due_date >= NOW() - INTERVAL '11 months'
-        AND due_date <= NOW() + INTERVAL '3 months'
+        AND due_date >= NOW()
+        AND due_date < NOW() + INTERVAL '3 months'
       GROUP BY DATE_TRUNC('month', due_date)
       ORDER BY month ASC`;
 
