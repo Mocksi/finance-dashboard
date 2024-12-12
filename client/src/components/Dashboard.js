@@ -91,6 +91,11 @@ const Dashboard = () => {
       allMonths: allMonths.filter(m => m.startsWith('2024-12'))
     });
 
+    console.log('December Metrics:', {
+      metrics: dashboardData.monthlyMetrics.find(m => m.month === '2024-12-01T00:00:00.000Z'),
+      month: '2024-12-01T00:00:00.000Z'
+    });
+
     // Create array of all months including future months from projections
     const allMonths = [...new Set([
       ...dashboardData.monthlyMetrics.map(m => m.month),
@@ -117,7 +122,7 @@ const Dashboard = () => {
           data: allMonths.map(month => {
             const monthDate = new Date(month);
             const now = new Date();
-            return monthDate >= now 
+            return monthDate > new Date(now.getFullYear(), now.getMonth(), 1) 
               ? dashboardData.invoiceProjections?.find(p => p.month === month)?.projected_revenue || 0
               : null;
           }),
