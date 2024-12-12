@@ -100,14 +100,11 @@ const Dashboard = () => {
         {
           label: 'Revenue',
           data: allMonths.map(month => {
-            console.log('Month comparison:', {
-              monthFromAllMonths: month,
-              allMonthsArray: allMonths,
-              metricsDecember: dashboardData.monthlyMetrics[11],
-              foundMetric: dashboardData.monthlyMetrics.find(m => m.month === month),
-              exactMatch: month === dashboardData.monthlyMetrics[11].month
-            });
-            return dashboardData.monthlyMetrics?.find(m => m.month === month)?.revenue || 0;
+            const monthDate = new Date(month);
+            const now = new Date();
+            return monthDate <= now 
+              ? dashboardData.monthlyMetrics?.find(m => m.month === month)?.revenue || 0
+              : null;
           }),
           borderColor: '#60A5FA',
           backgroundColor: 'transparent',
@@ -129,9 +126,13 @@ const Dashboard = () => {
         },
         {
           label: 'Expenses',
-          data: allMonths.map(month => 
-            dashboardData.monthlyMetrics.find(m => m.month === month)?.expenses || 0
-          ),
+          data: allMonths.map(month => {
+            const monthDate = new Date(month);
+            const now = new Date();
+            return monthDate <= now 
+              ? dashboardData.monthlyMetrics?.find(m => m.month === month)?.expenses || 0
+              : null;
+          }),
           borderColor: '#F87171',
           backgroundColor: 'transparent',
           borderWidth: 2
