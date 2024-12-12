@@ -11,7 +11,8 @@ router.get('/dashboard-data', auth, async (req, res) => {
         COALESCE(SUM(credit), 0) as revenue,
         COALESCE(SUM(debit), 0) as expenses
       FROM transactions
-      WHERE date >= NOW() - INTERVAL '12 months'
+      WHERE date >= NOW() - INTERVAL '11 months'
+        AND date <= NOW() + INTERVAL '1 month'
       GROUP BY DATE_TRUNC('month', date)
       ORDER BY month ASC`;
 
