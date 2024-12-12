@@ -14,7 +14,7 @@ import {
 } from 'chart.js';
 import { Line, Pie } from 'react-chartjs-2';
 import * as d3 from 'd3';
-import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, HelpCircle } from 'lucide-react';
 import { UserContext } from '../contexts/UserContext';
 
 // Register ChartJS components
@@ -217,7 +217,15 @@ const Dashboard = () => {
               <DollarSign className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Total Revenue</p>
+              <p className="text-sm font-medium text-gray-500 flex items-center gap-1">
+                Total Revenue
+                <span className="group relative">
+                  <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
+                  <span className="hidden group-hover:block absolute z-10 w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg">
+                    Last 12 months of revenue
+                  </span>
+                </span>
+              </p>
               <p className="text-2xl font-semibold text-gray-900">
                 ${(dashboardData.monthlyMetrics || [])
                   .reduce((sum, m) => sum + (Number(m.revenue) || 0), 0)
@@ -233,7 +241,15 @@ const Dashboard = () => {
               <TrendingDown className="h-6 w-6 text-red-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Total Expenses</p>
+              <p className="text-sm font-medium text-gray-500 flex items-center gap-1">
+                Total Expenses
+                <span className="group relative">
+                  <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
+                  <span className="hidden group-hover:block absolute z-10 w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg">
+                    Last 12 months of expenses
+                  </span>
+                </span>
+              </p>
               <p className="text-2xl font-semibold text-gray-900">
                 ${(dashboardData.monthlyMetrics || [])
                   .reduce((sum, m) => sum + (Number(m.expenses) || 0), 0)
@@ -249,7 +265,15 @@ const Dashboard = () => {
               <TrendingUp className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Net Income</p>
+              <p className="text-sm font-medium text-gray-500 flex items-center gap-1">
+                Net Income
+                <span className="group relative">
+                  <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
+                  <span className="hidden group-hover:block absolute z-10 w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg">
+                    Last 12 months of net income (revenue - expenses)
+                  </span>
+                </span>
+              </p>
               <p className="text-2xl font-semibold text-gray-900">
                 ${(dashboardData.monthlyMetrics || [])
                   .reduce((sum, m) => sum + (Number(m.revenue || 0) - Number(m.expenses || 0)), 0)
