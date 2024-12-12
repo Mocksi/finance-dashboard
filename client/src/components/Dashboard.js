@@ -89,6 +89,9 @@ const Dashboard = () => {
       };
     }
 
+    const now = new Date();
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
     const months = dashboardData.monthlyMetrics.map(m => 
       new Date(m.month).toLocaleString('default', { month: 'short' })
     );
@@ -105,7 +108,15 @@ const Dashboard = () => {
         },
         {
           label: 'Projected Revenue',
-          data: dashboardData.invoiceProjections?.map(p => p.projected_revenue || 0) || [],
+          data: dashboardData.monthlyMetrics.map(m => {
+            const monthDate = new Date(m.month);
+            // Only show projections for current month and future
+            return monthDate >= currentMonth 
+              ? dashboardData.invoiceProjections?.find(p => 
+                  new Date(p.month).getTime() === monthDate.getTime()
+                )?.projected_revenue || 0
+              : null;
+          }),
           borderColor: '#93C5FD',
           backgroundColor: 'transparent',
           borderWidth: 2,
