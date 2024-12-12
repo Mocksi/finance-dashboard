@@ -102,6 +102,11 @@ const Dashboard = () => {
       ).find((_, i) => allMonths[i].startsWith('2024-12'))
     );
 
+    console.log('December Data:', {
+      metrics: dashboardData.monthlyMetrics.find(m => m.month.startsWith('2024-12')),
+      allMonths: allMonths.filter(m => m.startsWith('2024-12'))
+    });
+
     return {
       labels: allMonths.map(m => 
         new Date(m).toLocaleString('default', { month: 'short' })
