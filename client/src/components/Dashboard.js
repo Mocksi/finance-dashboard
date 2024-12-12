@@ -186,6 +186,17 @@ const Dashboard = () => {
     }
   }, [dashboardData, d3Container]);
 
+  // Add this after your other useEffects
+  useEffect(() => {
+    if (dashboardData) {
+      console.log('=== Dashboard Data ===');
+      console.log('Monthly Metrics:', dashboardData.monthlyMetrics);
+      console.log('Invoice Projections:', dashboardData.invoiceProjections);
+      console.log('Current Date:', new Date().toISOString());
+      console.log('===================');
+    }
+  }, [dashboardData]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
