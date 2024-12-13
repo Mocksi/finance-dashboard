@@ -271,8 +271,6 @@ const Invoices = () => {
       }
 
       const data = await response.json();
-      console.log('Raw data from server:', data); // Debug log 1
-
       const formattedInvoice = {
         ...data,
         clientName: data.client_name,
@@ -280,7 +278,6 @@ const Invoices = () => {
         items: Array.isArray(data.items) ? data.items : JSON.parse(data.items || '[]')
       };
       
-      console.log('Formatted invoice:', formattedInvoice); // Debug log 2
       return formattedInvoice;
       
     } catch (error) {

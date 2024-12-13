@@ -59,7 +59,7 @@ router.get('/dashboard-data', auth, async (req, res) => {
       invoiceProjections: projectionsResult.rows
     });
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
+    console.error('Dashboard data fetch error:', error.message);
     res.status(500).json({ error: 'Failed to fetch dashboard data' });
   }
 });

@@ -42,6 +42,7 @@ const lookupInvoice = async (req, res, next) => {
     req.invoice = result.rows[0];
     next();
   } catch (error) {
+    console.error('Invoice fetch error:', error.message);
     next(error);
   }
 };
