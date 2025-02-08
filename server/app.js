@@ -23,7 +23,7 @@ app.use((req, res, next) => {
 
 // Update CORS configuration
 app.use(cors({
-    origin: ['https://finance-dashboard-tfn6.onrender.com'],
+    origin: ['https://finance-dashboard-tfn6.onrender.com', 'https://financy-luln.onrender.com'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin'],
