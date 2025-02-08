@@ -33,7 +33,8 @@ const securityHeaders = (_req, res, next) => {
 const corsOptions = {
     origin: [
         'https://financy-luln.onrender.com',
-        'https://finance-dashboard-tfn6.onrender.com'
+        'https://finance-dashboard-tfn6.onrender.com',
+        'http://localhost:3030'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
