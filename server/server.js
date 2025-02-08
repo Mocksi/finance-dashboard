@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const path = require('path');
+const { securityHeaders, corsOptions } = require('./middleware/security');
 const transactionsRouter = require('./routes/transactions');
 const dashboardRouter = require('./routes/dashboard');
 const uploadRouter = require('./routes/upload');
@@ -12,8 +13,12 @@ const accountRouter = require('./routes/account');
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Apply security headers middleware
+app.use(securityHeaders);
+
+// Apply CORS configuration
+app.use(cors(corsOptions));
+
 app.use(express.json());
 
 // Serve static files from React build
