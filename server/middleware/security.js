@@ -2,67 +2,54 @@ const securityHeaders = (_req, res, next) => {
     // Cache control
     res.set('Cache-Control', 'no-store');
 
-    // Full CSP as seen in superframe.com
-    /*
+    // Updated CSP with necessary permissions
     res.set('Content-Security-Policy',
-        "default-src 'self'; " +
-        "connect-src 'self' " +
-        "https://api.segment.io/ " +
-        "https://cdn.segment.com/v1/projects/AAsmATKBPE7wyNlfwG4gQ9fs85rT8hUp/ " +
-        "https://o4505116382789632.ingest.sentry.io/api/4505993534701568/ " +
-        "https://events.launchdarkly.com/ " +
-        "https://clientstream.launchdarkly.com/ " +
-        "wss://clientstream.launchdarkly.com/ " +  // Added WebSocket support
-        "https://*.launchdarkly.com/ " +
-        "https://api.mocksi.ai/; " +  // Added Mocksi API
-        "font-src 'self' https://fonts.gstatic.com; " +
+        "default-src 'self' http://localhost:* https://financy-luln.onrender.com; " +
+        "connect-src 'self' http://localhost:* https://api.segment.io/ https://financy-luln.onrender.com; " +
+        "font-src 'self' https://fonts.gstatic.com data:; " +
         "img-src 'self' * data: blob:; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://onrender.com/; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* https://financy-luln.onrender.com; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "frame-src 'self' https://api.mocksi.ai/; " +  // Added frame-src for Mocksi
+        "frame-src 'self' http://localhost:* https://financy-luln.onrender.com; " +
         "manifest-src 'self'; " +
-        "frame-ancestors 'none'; " +
-        "upgrade-insecure-requests; " +
-        "block-all-mixed-content; "
-    );
-    */
-    res.set('Content-Security-Policy',
-        "default-src 'self'; " +
-        "connect-src 'self' " +
-        "https://api.segment.io/ " +
-        "http://localhost:3030/; " +
-        "frame-src 'self' https://api.mocksi.ai/ http://localhost:3030/; " +
-        "manifest-src 'self'; " +
-        "frame-ancestors http://localhost:3030/; " +
-        "upgrade-insecure-requests; " +
-        "block-all-mixed-content; "
+        "frame-ancestors 'self' http://localhost:* https://financy-luln.onrender.com; " +
+        "worker-src 'self' blob:; " +
+        "base-uri 'self';"
     );
 
-    // Other security headers remain unchanged
-    res.set('Cross-Origin-Embedder-Policy', 'credentialless');
-    res.set('Cross-Origin-Opener-Policy', 'same-origin');
-    res.set('Cross-Origin-Resource-Policy', 'same-site');
-    res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.set('Strict-Transport-Security', 'max-age=2592000; preload');
+    // Updated security headers for development
+    res.set('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    res.set('Cross-Origin-Opener-Policy', 'unsafe-none');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.set('Referrer-Policy', 'no-referrer-when-downgrade');
     res.set('X-Content-Type-Options', 'nosniff');
     res.set('X-Frame-Options', 'SAMEORIGIN');
     res.set('X-Permitted-Cross-Domain-Policies', 'none');
-    res.set('X-XSS-Protection', '1');
+    res.set('X-XSS-Protection', '1; mode=block');
+
     next();
 };
 
-// Updated corsOptions with additional headers
 const corsOptions = {
-    origin: [
-        'https://financy-luln.onrender.com',
-        'https://finance-dashboard-tfn6.onrender.com',
-        'http://localhost:3000',
-        'https://events.launchdarkly.com',
-        'https://clientstream.launchdarkly.com',
-        'https://api.mocksi.ai'  // Added Mocksi origin
-    ],
+    origin: function(origin, callback) {
+        const allowedOrigins = [
+            'https://financy-luln.onrender.com',
+            'https://finance-dashboard-tfn6.onrender.com',
+            'http://localhost:3000',
+            'http://localhost:3030',
+            'https://events.launchdarkly.com',
+            'https://clientstream.launchdarkly.com',
+            'https://api.mocksi.ai'
+        ];
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],  // Fixed DELETE string
     allowedHeaders: [
         'Content-Type',
         'Authorization',
@@ -71,21 +58,11 @@ const corsOptions = {
         'X-Requested-With',
         'Cache-Control',
         'LD-API-Key',
-        'X-API-Key',  // Added for Mocksi API authentication
-        'X-Client-Version'  // Added for version tracking
+        'X-API-Key',
+        'X-Client-Version'
     ],
-    exposedHeaders: [
-        'Content-Security-Policy',
-        'Cross-Origin-Embedder-Policy',
-        'Cross-Origin-Opener-Policy',
-        'Cross-Origin-Resource-Policy',
-        'Strict-Transport-Security',
-        'X-Content-Type-Options',
-        'X-Frame-Options',
-        'X-Permitted-Cross-Domain-Policies',
-        'X-XSS-Protection'
-    ],
-    maxAge: 86400 // 24 hours in seconds
+    exposedHeaders: ['*'],  // Simplified to allow all headers
+    maxAge: 86400
 };
 
 module.exports = {
