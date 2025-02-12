@@ -33,7 +33,7 @@ const securityHeaders = (_req, res, next) => {
         "http://localhost:3030/; " +
         "frame-src 'self' https://api.mocksi.ai/ http://localhost:3030/; " +
         "manifest-src 'self'; " +
-        "frame-ancestors 'none'; " +
+        "frame-ancestors http://localhost:3030/; " +
         "upgrade-insecure-requests; " +
         "block-all-mixed-content; "
     );
@@ -45,7 +45,7 @@ const securityHeaders = (_req, res, next) => {
     res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.set('Strict-Transport-Security', 'max-age=2592000; preload');
     res.set('X-Content-Type-Options', 'nosniff');
-    res.set('X-Frame-Options', 'DENY');
+    res.set('X-Frame-Options', 'SAMEORIGIN');
     res.set('X-Permitted-Cross-Domain-Policies', 'none');
     res.set('X-XSS-Protection', '1');
     next();
